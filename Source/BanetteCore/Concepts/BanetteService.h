@@ -1,4 +1,5 @@
-// All project comments must be in English per repo policy.
+// Copyright 2019-Present tarnishablec. All Rights Reserved.
+
 #pragma once
 
 #include "CoreMinimal.h"

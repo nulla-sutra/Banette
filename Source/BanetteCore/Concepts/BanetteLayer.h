@@ -1,4 +1,4 @@
-// All project comments must be in English per repo policy.
+// Copyright 2019-Present tarnishablec. All Rights Reserved.
 // ReSharper disable CppUE4CodingStandardNamingViolationWarning
 #pragma once
 
@@ -32,7 +32,7 @@ namespace Banette
 		TSharedRef<TService<RequestT, ResponseT>>
 		Build(TSharedRef<TService<RequestT, ResponseT>> BaseService) const
 		{
-			TSharedRef<TService<RequestT, ResponseT>> Current = BaseService;
+			auto Current = BaseService;
 
 			for (int32 i = Layers.Num() - 1; i >= 0; --i)
 			{

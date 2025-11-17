@@ -1,7 +1,4 @@
 ﻿#include "BanetteCore.h"
-#include "BanetteTypes.h"
-#include "BanetteService.h"
-#include "BanetteLayer.h"
 
 #define LOCTEXT_NAMESPACE "FBanetteCoreModule"
 
