@@ -8,13 +8,13 @@
 namespace Banette
 {
 	template <typename RequestT, typename ResponseT>
-	class TLayer
+	class ILayer
 	{
 	public:
-		virtual ~TLayer() = default;
+		virtual ~ILayer() = default;
 
-		virtual TSharedRef<TService<RequestT, ResponseT>> Wrap(
-			TServiceRef<RequestT, ResponseT> Inner) = 0;
+		virtual TSharedRef<TService<RequestT, ResponseT>>
+		Wrap(TSharedRef<TService<RequestT, ResponseT>> Inner) = 0;
 	};
 
 
@@ -23,7 +23,7 @@ namespace Banette
 	{
 	public:
 		TBanetteServiceChain& Layer(
-			TSharedRef<TLayer<RequestT, ResponseT>> InLayer)
+			TSharedRef<ILayer<RequestT, ResponseT>> InLayer)
 		{
 			Layers.Add(InLayer);
 			return *this;
@@ -43,9 +43,9 @@ namespace Banette
 		}
 
 	private:
-		TArray<TSharedRef<TLayer<RequestT, ResponseT>>> Layers;
+		TArray<TSharedRef<ILayer<RequestT, ResponseT>>> Layers;
 	};
 
 	template <typename RequestT, typename ResponseT>
-	using TLayerRef = TSharedRef<TLayer<RequestT, ResponseT>>;
+	using TLayerRef = TSharedRef<ILayer<RequestT, ResponseT>>;
 }
