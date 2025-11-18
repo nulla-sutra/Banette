@@ -1,25 +1,27 @@
 ﻿using UnrealBuildTool;
 
-public class Banette : ModuleRules
+public class BanetteTest : ModuleRules
 {
-	public Banette(ReadOnlyTargetRules Target) : base(Target)
+	public BanetteTest(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-		PublicIncludePaths.Add(ModuleDirectory);
 
 		PublicDependencyModuleNames.AddRange(
 			new[]
 			{
 				"Core",
-				"CoreUObject",
-				"UE5Coro",
+				"Banette",
+				"BanetteTransport"
 			}
 		);
 
 		PrivateDependencyModuleNames.AddRange(
 			new[]
 			{
-				"Engine"
+				"CoreUObject",
+				"Engine",
+				"Slate",
+				"SlateCore"
 			}
 		);
 	}

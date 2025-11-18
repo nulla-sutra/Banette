@@ -2,27 +2,27 @@
 
 public class BanetteTransport : ModuleRules
 {
-    public BanetteTransport(ReadOnlyTargetRules Target) : base(Target)
-    {
-        PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-        PublicIncludePaths.Add(ModuleDirectory);
+	public BanetteTransport(ReadOnlyTargetRules Target) : base(Target)
+	{
+		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+		PublicIncludePaths.Add(ModuleDirectory);
 
-        PublicDependencyModuleNames.AddRange(
-            new string[]
-            {
-                "Core",
-                "CoreUObject",
-                "HTTP",
-                "UE5Coro",
-                "BanetteCore"
-            }
-        );
+		PublicDependencyModuleNames.AddRange(
+			new[]
+			{
+				"Core",
+				"CoreUObject",
+				"HTTP",
+				"UE5Coro",
+				"Banette"
+			}
+		);
 
-        PrivateDependencyModuleNames.AddRange(
-            new string[]
-            {
-                "Engine"
-            }
-        );
-    }
+		PrivateDependencyModuleNames.AddRange(
+			new[]
+			{
+				"Engine"
+			}
+		);
+	}
 }

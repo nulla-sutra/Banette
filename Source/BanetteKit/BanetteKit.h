@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 
-class FBanetteCoreModule : public IModuleInterface
+class FBanetteKitModule : public IModuleInterface
 {
 public:
     virtual void StartupModule() override;

@@ -1,0 +1,19 @@
+// Copyright 2019-Present tarnishablec. All Rights Reserved.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
+#include "BanetteTestLibrary.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class BANETTETEST_API UBanetteTestLibrary : public UBlueprintFunctionLibrary
+{
+	GENERATED_BODY()
+
+	UFUNCTION(BlueprintCallable, Category = "Banette|Test")
+	static void Test();
+};
