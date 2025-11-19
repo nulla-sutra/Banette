@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "UE5Coro.h"
 #include "BanetteTestLibrary.generated.h"
 
 /**
@@ -14,6 +15,6 @@ class BANETTETEST_API UBanetteTestLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 
-	UFUNCTION(BlueprintCallable, Category = "Banette|Test")
-	static void Test();
+	UFUNCTION(BlueprintCallable, Category = "Banette|Test", meta=(Latent, LatentInfo = LatentInfo))
+	static FVoidCoroutine Test(FLatentActionInfo LatentInfo);
 };

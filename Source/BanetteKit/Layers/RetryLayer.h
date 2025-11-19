@@ -11,14 +11,7 @@ namespace Banette::Kit
 	using namespace Banette::Core;
 
 	/// Configuration for retry behavior
-	struct FRetryConfig
-	{
-		// Maximum number of retry attempts (1 = no retries, only the original attempt)
-		uint8 MaxAttempts = 3;
 
-		// Delay between retries in seconds
-		float DelayBetweenRetries = 0.1f;
-	};
 
 	/// Generic Retry Layer that wraps any Service to add retry logic
 	/// Both InServiceType and OutServiceType are the same Service type
@@ -29,6 +22,18 @@ namespace Banette::Kit
 		using RequestType = ServiceT::RequestType;
 		using ResponseType = ServiceT::ResponseType;
 		using ErrorType = ServiceT::ErrorType;
+
+		struct FRetryConfig
+		{
+			// Maximum number of retry attempts (1 = no retries, only the original attempt)
+			uint8 MaxAttempts = 3;
+
+			// Delay between retries in seconds
+			float DelayBetweenRetries = 0.1f;
+
+			// Challenge whether we should retry (if false, then retry)
+			TFunction<bool(const ResponseType&)> Challenge;
+		};
 
 		explicit TRetryLayer(const FRetryConfig& InConfig = FRetryConfig())
 			: Config(InConfig)
@@ -65,10 +70,13 @@ namespace Banette::Kit
 				{
 					auto Result = co_await InnerService->Call(Request);
 
-					// If successful, return immediately
 					if (Result.IsValid())
 					{
-						co_return Result;
+						// Don't retry if Challenge is not set or if Challenge returns true
+						if (!Config.Challenge || Config.Challenge(Result.GetValue()))
+						{
+							co_return Result;
+						}
 					}
 
 					// If this is the last attempt, return the error
@@ -76,11 +84,6 @@ namespace Banette::Kit
 					{
 						co_return Result;
 					}
-
-					// Check if we should retry based on an error type
-
-					// You can add custom error handling logic here
-					// For now, we retry by default (unless you want specific error checking)
 
 					// Wait before retrying
 					if (Config.DelayBetweenRetries > 0.f)

@@ -6,25 +6,39 @@
 #include "BanetteKit/Layers/RetryLayer.h"
 #include "Http/BanetteHttp.h"
 
-void UBanetteTestLibrary::Test()
+FVoidCoroutine UBanetteTestLibrary::Test(FLatentActionInfo LatentInfo)
 {
 	using namespace Banette::Transport::Http;
 
-	// 创建一个 HTTP Service
 	const auto HttpService = MakeShared<FHttpService>();
 
-	// 配置重试策略
-	Banette::Kit::FRetryConfig RetryConfig;
-	RetryConfig.MaxAttempts = 5;
-	RetryConfig.DelayBetweenRetries = 0.5f;
+	Banette::Kit::TRetryLayer<FHttpService> RetryLayer({
+		.MaxAttempts = 5,
+		.DelayBetweenRetries = 0.5f,
+		.Challenge = [](const FHttpService::ResponseType& Response)
+		{
+			return Response.bSucceeded;
+		}
+	});
 
-	// 创建重试 Layer
-	Banette::Kit::TRetryLayer<FHttpService> RetryLayer(RetryConfig);
+	const auto WrappedService =
+		Banette::Builder::TServiceBuilder<>::New(HttpService)
+		.Layer(RetryLayer)
+		.Build();
 
-	// 使用 ServiceBuilder 组合它们
-	auto WrappedService = Banette::Builder::TServiceBuilder<>::New(HttpService)
-	                      .Layer(RetryLayer)
-	                      .Build();
+	FHttpRequest Request;
+	Request.Url = TEXT("https://httpbin.org/get");
+	Request.Method = EHttpMethod::Get;
 
-	// 现在 WrappedService 具有重试功能！
+	if (auto Result = co_await WrappedService->Call(Request); Result.IsValid())
+	{
+		const auto& Response = Result.GetValue();
+		UE_LOG(LogTemp, Log, TEXT("HTTP Request succeeded with status code: %d"), Response.StatusCode);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("HTTP Request failed after retries"));
+	}
+
+	co_return;
 }
