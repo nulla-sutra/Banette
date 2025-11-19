@@ -3,11 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Definition.h"
 #include "Experimental/UnifiedError/UnifiedError.h"
 
 
-namespace Banette
+namespace Banette::Core
 {
 	namespace Error
 	{

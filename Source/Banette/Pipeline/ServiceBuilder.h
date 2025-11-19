@@ -10,29 +10,32 @@ namespace Banette::Builder
 {
 	using namespace Banette::Core;
 
-	/// 空状态：还没有 Service
+	/// Empty state: no Service yet
 	class FEmptyServiceState
 	{
 	public:
 		using ServiceType = void;
 	};
 
-	/// ServiceBuilder：链式构建一个被多个 Layer 包装的 Service
+	/// ServiceBuilder: chain-build a Service wrapped by multiple Layers
 	template <typename CurrentServiceT = void>
-	class BANETTE_API TServiceBuilder
+	class TServiceBuilder
 	{
+		template <typename>
+		friend class TServiceBuilder;
+
 	public:
 		TServiceBuilder() = default;
 
-		/// 从一个具体的 Service 开始
+		/// Start from a concrete Service
 		template <CService S>
 		static TServiceBuilder<S> New(TSharedRef<S> InService)
 		{
 			return TServiceBuilder<S>(InService);
 		}
 
-		/// 应用一个 Layer：把当前 Service 传给 Layer，得到一个新的 Service
-		/// Layer 必须满足：它的 InServiceType 是 CurrentServiceT，OutServiceType 是新类型
+		/// Apply a Layer: pass the current Service to the Layer to get a new Service
+		/// The Layer must satisfy: its InServiceType is CurrentServiceT, and OutServiceType is the new type
 		template <CLayer L>
 			requires std::is_same_v<typename L::InServiceType, CurrentServiceT>
 		TServiceBuilder<typename L::OutServiceType> Layer(L& InLayer)
@@ -44,7 +47,7 @@ namespace Banette::Builder
 			return TServiceBuilder<typename L::OutServiceType>(WrappedService);
 		}
 
-		/// 获取最终的 Service
+		/// Get the final Service
 		template <typename S = CurrentServiceT>
 			requires (!std::is_same_v<S, void>)
 		TSharedRef<S> Build() const
@@ -63,22 +66,16 @@ namespace Banette::Builder
 		TSharedRef<CurrentServiceT> CurrentService;
 	};
 
-	/// 特化版本：空状态
+	/// Specialization: empty state
 	template <>
 	class TServiceBuilder<void>
 	{
 	public:
 		TServiceBuilder() = default;
 
-		/// 从一个具体的 Service 开始
+		/// Start from a concrete Service
 		template <CService S>
 		static TServiceBuilder<S> New(TSharedRef<S> InService)
-		{
-			return TServiceBuilder<S>(InService);
-		}
-
-		template <typename S>
-		TServiceBuilder<S> New(TSharedRef<S> InService)
 		{
 			return TServiceBuilder<S>(InService);
 		}

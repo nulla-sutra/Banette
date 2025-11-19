@@ -2,18 +2,17 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Definition.h"
 #include "Service.h"
 
 namespace Banette::Core
 {
 	template <CService InServiceT, CService OutService>
-	class BANETTE_API TLayer
+	class TLayer
 	{
+	public:
 		using InServiceType = InServiceT;
 		using OutServiceType = OutService;
 
-	public:
 		virtual ~TLayer() = default;
 
 		virtual TSharedRef<OutService> Wrap(TSharedRef<InServiceT> Inner) = 0;

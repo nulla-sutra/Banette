@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Error.h"
-#include "Definition.h"
 #include "UE5Coro.h"
 
 namespace Banette::Core
@@ -13,6 +12,10 @@ namespace Banette::Core
 	class TService : public TSharedFromThis<TService<RequestT, ResponseT, ErrorT>>
 	{
 	public:
+		using RequestType = RequestT;
+		using ResponseType = ResponseT;
+		using ErrorType = ErrorT;
+
 		virtual ~TService() = default;
 
 		virtual UE5Coro::TCoroutine<TResult<ResponseT, ErrorT>> Call(const RequestT& Request) = 0;

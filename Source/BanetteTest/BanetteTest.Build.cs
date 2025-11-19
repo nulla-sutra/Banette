@@ -11,7 +11,9 @@ public class BanetteTest : ModuleRules
 			{
 				"Core",
 				"Banette",
-				"BanetteTransport"
+				"BanetteTransport",
+				"BanetteKit",
+				"UE5Coro"
 			}
 		);
 
