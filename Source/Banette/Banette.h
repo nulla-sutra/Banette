@@ -1,11 +1,13 @@
-﻿#pragma once
+// Copyright 2019-Present tarnishablec. All Rights Reserved.
 
-#include "CoreMinimal.h"
-#include "Modules/ModuleManager.h"
+#pragma once
 
-class FBanetteModule : public IModuleInterface
-{
-public:
-    virtual void StartupModule() override;
-    virtual void ShutdownModule() override;
-};
+#ifndef BANETTE_PRIVATE_ALLOW_DIRECT_INCLUDE
+#define BANETTE_PRIVATE_ALLOW_DIRECT_INCLUDE
+#endif
+
+#include "Banette/Core/Error.h"
+#include "Banette/Core/Service.h"
+#include "Banette/Core/Layer.h"
+
+#undef BANETTE_PRIVATE_ALLOW_DIRECT_INCLUDE

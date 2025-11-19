@@ -2,7 +2,7 @@
 
 
 #include "BanetteTestLibrary.h"
-#include "Banette/Pipeline/BanetteServiceBuilder.h"
+#include "Banette.h"
 
 void UBanetteTestLibrary::Test()
 {

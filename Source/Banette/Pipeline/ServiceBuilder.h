@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Core/BanetteService.h"
-#include "Core/BanetteLayer.h"
+#include "Core/Service.h"
+#include "Core/Layer.h"
 
 namespace Banette::Builder
 {
