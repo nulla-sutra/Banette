@@ -8,50 +8,60 @@
 #include "UE5Coro.h"
 #include "Experimental/UnifiedError/UnifiedError.h"
 
+// Define UnifiedError module and error codes for HTTP transport
+UE_DEFINE_ERROR_MODULE(Banette::Transport::Http);
+
+UE_DEFINE_ERROR(InvalidUrl, Banette::Transport::Http);
+
+UE_DEFINE_ERROR(RequestCreationFailed, Banette::Transport::Http);
+
+UE_DEFINE_ERROR(ConnectionFailed, Banette::Transport::Http);
+
+UE_DEFINE_ERROR(NoResponse, Banette::Transport::Http);
+
 namespace Banette::Transport::Http
 {
-	namespace
-	{
-		FString ToVerb(const EHttpMethod Method)
-		{
-			switch (Method)
-			{
-			case EHttpMethod::Get: return TEXT("GET");
-			case EHttpMethod::Post: return TEXT("POST");
-			case EHttpMethod::Put: return TEXT("PUT");
-			case EHttpMethod::Delete: return TEXT("DELETE");
-			case EHttpMethod::Patch: return TEXT("PATCH");
-			case EHttpMethod::Head: return TEXT("HEAD");
-			default: return TEXT("GET");
-			}
-		}
+	using namespace UE::UnifiedError::Banette::Transport::Http;
 
-		void ParseHeaders(const TArray<FString>& InAllHeaders, TMap<FString, FString>& OutHeaders)
+	static FString ToVerb(const EHttpMethod Method)
+	{
+		switch (Method)
 		{
-			OutHeaders.Reset();
-			for (const FString& Line : InAllHeaders)
+		case EHttpMethod::Get: return TEXT("GET");
+		case EHttpMethod::Post: return TEXT("POST");
+		case EHttpMethod::Put: return TEXT("PUT");
+		case EHttpMethod::Delete: return TEXT("DELETE");
+		case EHttpMethod::Patch: return TEXT("PATCH");
+		case EHttpMethod::Head: return TEXT("HEAD");
+		default: return TEXT("GET");
+		}
+	}
+
+	void ParseHeaders(const TArray<FString>& InAllHeaders, TMap<FString, FString>& OutHeaders)
+	{
+		OutHeaders.Reset();
+		for (const FString& Line : InAllHeaders)
+		{
+			if (int32 ColonIndex = INDEX_NONE; Line.FindChar(TEXT(':'), ColonIndex) && ColonIndex > 0)
 			{
-				if (int32 ColonIndex = INDEX_NONE; Line.FindChar(TEXT(':'), ColonIndex) && ColonIndex > 0)
-				{
-					FString Key = Line.Left(ColonIndex).TrimStartAndEnd();
-					FString Value = Line.Mid(ColonIndex + 1).TrimStartAndEnd();
-					OutHeaders.Add(MoveTemp(Key), MoveTemp(Value));
-				}
+				FString Key = Line.Left(ColonIndex).TrimStartAndEnd();
+				FString Value = Line.Mid(ColonIndex + 1).TrimStartAndEnd();
+				OutHeaders.Add(MoveTemp(Key), MoveTemp(Value));
 			}
 		}
 	}
 
-	UE5Coro::TCoroutine<TValueOrError<FHttpResponse, UE::UnifiedError::FError>>
+	UE5Coro::TCoroutine<TResult<FHttpResponse>>
 	FHttpService::Call(const FHttpRequest& Request)
 	{
 		// Validate URL
 		if (Request.Url.IsEmpty())
-			co_return MakeError();
+			co_return MakeError(InvalidUrl::MakeError());
 
 		// Create request
 		auto* Module = &FHttpModule::Get();
 		if (!Module)
-			co_return MakeError();
+			co_return MakeError(RequestCreationFailed::MakeError());
 
 		const auto HttpReq = Module->CreateRequest();
 
@@ -86,10 +96,10 @@ namespace Banette::Transport::Http
 		auto [Response, bConnected] = co_await UE5Coro::Http::ProcessAsync(HttpReq);
 
 		if (!bConnected)
-			co_return MakeError();
+			co_return MakeError(ConnectionFailed::MakeError());
 
 		if (!Response.IsValid())
-			co_return MakeError();
+			co_return MakeError(ConnectionFailed::MakeError());
 
 		FHttpResponse Out;
 		Out.Url = HttpReq->GetURL();

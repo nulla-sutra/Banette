@@ -2,8 +2,25 @@
 
 #pragma once
 #include "Banette.h"
+#include "Experimental/UnifiedError/UnifiedError.h"
 #include "Containers/Map.h"
 #include "Containers/Array.h"
+
+// UnifiedError declarations for HTTP transport failures
+// Expose stable error codes so callers can branch on explicit conditions.
+UE_DECLARE_ERROR_MODULE(BANETTETRANSPORT_API, Banette::Transport::Http);
+
+UE_DECLARE_ERROR(BANETTETRANSPORT_API, InvalidUrl, 1, Banette::Transport::Http,
+                 NSLOCTEXT("BanetteHttp", "InvalidUrl", "Invalid or empty URL."));
+
+UE_DECLARE_ERROR(BANETTETRANSPORT_API, RequestCreationFailed, 2, Banette::Transport::Http,
+                 NSLOCTEXT("BanetteHttp", "RequestCreationFailed", "Failed to create HTTP request."));
+
+UE_DECLARE_ERROR(BANETTETRANSPORT_API, ConnectionFailed, 3, Banette::Transport::Http,
+                 NSLOCTEXT("BanetteHttp", "ConnectionFailed", "HTTP connection failed."));
+
+UE_DECLARE_ERROR(BANETTETRANSPORT_API, NoResponse, 4, Banette::Transport::Http,
+                 NSLOCTEXT("BanetteHttp", "NoResponse", "No HTTP response received."));
 
 
 namespace Banette::Transport::Http
@@ -65,11 +82,15 @@ namespace Banette::Transport::Http
 		bool bSucceeded = false;
 	};
 
+	static FString ToVerb(const EHttpMethod Method);
+
 	class BANETTETRANSPORT_API FHttpService : public TService<FHttpRequest, FHttpResponse>
 	{
 	public:
+		virtual ~FHttpService() override = default;
+
 		// Perform an HTTP call using Unreal's HTTP module.
-		virtual UE5Coro::TCoroutine<TValueOrError<FHttpResponse, UE::UnifiedError::FError>> Call(
+		virtual UE5Coro::TCoroutine<TResult<FHttpResponse>> Call(
 			const FHttpRequest& Request) override;
 	};
 }

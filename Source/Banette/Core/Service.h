@@ -10,12 +10,8 @@
 namespace Banette::Core
 {
 	template <typename RequestT, typename ResponseT, Error::CUnifiedError ErrorT = UE::UnifiedError::FError>
-	class BANETTE_API TService : public TSharedFromThis<TService<RequestT, ResponseT, ErrorT>>
+	class TService : public TSharedFromThis<TService<RequestT, ResponseT, ErrorT>>
 	{
-		using RequestType = RequestT;
-		using ResponseType = ResponseT;
-		using ErrorType = ErrorT;
-
 	public:
 		virtual ~TService() = default;
 
