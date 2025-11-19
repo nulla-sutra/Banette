@@ -2,9 +2,8 @@
 
 
 #include "BanetteTestLibrary.h"
-#include "Banette/Pipeline/ServiceBuilder.h"
 #include "BanetteKit/Layers/RetryLayer.h"
-#include "Http/BanetteHttp.h"
+#include "BanetteTransport/Http/BanetteHttp.h"
 
 FVoidCoroutine UBanetteTestLibrary::Test(FLatentActionInfo LatentInfo)
 {

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Banette/Definition.h"
 #include "Experimental/UnifiedError/UnifiedError.h"
 
 

@@ -2,7 +2,16 @@
 
 #pragma once
 
+#ifndef BANETTE_PRIVATE_ALLOW_DIRECT_INCLUDE
+#define BANETTE_PRIVATE_ALLOW_DIRECT_INCLUDE
+#endif
+
+#include "Banette/Definition.h"
+
 #include "Banette/Core/Error.h"
 #include "Banette/Core/Service.h"
 #include "Banette/Core/Layer.h"
 
+#include "Banette/Pipeline/ServiceBuilder.h"
+
+#undef BANETTE_PRIVATE_ALLOW_DIRECT_INCLUDE
