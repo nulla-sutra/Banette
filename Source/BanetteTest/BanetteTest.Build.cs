@@ -13,7 +13,9 @@ public class BanetteTest : ModuleRules
 				"Banette",
 				"BanetteTransport",
 				"BanetteKit",
-				"UE5Coro"
+				"UE5Coro",
+				"Json",
+				"JsonUtilities",
 			}
 		);
 

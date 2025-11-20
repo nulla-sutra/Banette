@@ -6,7 +6,7 @@
 #include "Core/Service.h"
 #include "Core/Layer.h"
 
-namespace Banette::Builder
+namespace Banette::Pipeline
 {
 	using namespace Banette::Core;
 

@@ -2,27 +2,29 @@
 
 public class BanetteKit : ModuleRules
 {
-    public BanetteKit(ReadOnlyTargetRules Target) : base(Target)
-    {
-        PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+	public BanetteKit(ReadOnlyTargetRules Target) : base(Target)
+	{
+		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
-        PublicDependencyModuleNames.AddRange(
-            new string[]
-            {
-                "Core",
-                "UE5Coro",
-                "Banette"
-            }
-        );
+		PublicDependencyModuleNames.AddRange(
+			new string[]
+			{
+				"Core",
+				"UE5Coro",
+				"Banette",
+				"Json",
+				"JsonUtilities",
+			}
+		);
 
-        PrivateDependencyModuleNames.AddRange(
-            new string[]
-            {
-                "CoreUObject",
-                "Engine",
-                "Slate",
-                "SlateCore"
-            }
-        );
-    }
+		PrivateDependencyModuleNames.AddRange(
+			new string[]
+			{
+				"CoreUObject",
+				"Engine",
+				"Slate",
+				"SlateCore"
+			}
+		);
+	}
 }

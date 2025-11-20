@@ -45,23 +45,23 @@ namespace Banette::Kit
 		/// Wraps the inner Service with retry logic
 		virtual TSharedRef<ServiceT> Wrap(TSharedRef<ServiceT> Inner) override
 		{
-			return MakeShared<FTRetryServiceWrapper>(Inner, Config);
+			return MakeShared<FRetryService>(Inner, Config);
 		}
 
 	private:
 		FRetryConfig Config;
 
 		/// The actual wrapper Service that implements retry logic
-		class FTRetryServiceWrapper : public ServiceT
+		class FRetryService : public ServiceT
 		{
 		public:
-			explicit FTRetryServiceWrapper(TSharedRef<ServiceT> InInnerService, const FRetryConfig& InConfig)
+			explicit FRetryService(TSharedRef<ServiceT> InInnerService, const FRetryConfig& InConfig)
 				: InnerService(InInnerService)
 				  , Config(InConfig)
 			{
 			}
 
-			virtual ~FTRetryServiceWrapper() override = default;
+			virtual ~FRetryService() override = default;
 
 			virtual UE5Coro::TCoroutine<TResult<ResponseType, ErrorType>> Call(
 				const RequestType& Request) override

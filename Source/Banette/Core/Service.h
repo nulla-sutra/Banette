@@ -28,6 +28,12 @@ namespace Banette::Core
 
 	template <typename S>
 	concept CService =
+		// requires
+		// {
+		// 	typename S::RequestType;
+		// 	typename S::ResponseType;
+		// 	typename S::ErrorType;
+		// } &&
 		std::is_base_of_v<
 			TService<typename S::RequestType, typename S::ResponseType, typename S::ErrorType>,
 			S>;

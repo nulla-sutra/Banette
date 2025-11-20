@@ -17,4 +17,7 @@ class BANETTETEST_API UBanetteTestLibrary : public UBlueprintFunctionLibrary
 
 	UFUNCTION(BlueprintCallable, Category = "Banette|Test", meta=(Latent, LatentInfo = LatentInfo))
 	static FVoidCoroutine Test(FLatentActionInfo LatentInfo);
+
+	UFUNCTION(BlueprintCallable, Category = "Banette|Test", meta=(Latent, LatentInfo = LatentInfo))
+	static FVoidCoroutine Test2(FLatentActionInfo LatentInfo);
 };
