@@ -20,11 +20,6 @@ namespace Banette::Core
 
 	template <typename S>
 	concept CLayer =
-		// requires
-		// {
-		// 	typename S::InServiceType;
-		// 	typename S::OutServiceType;
-		// } &&
 		std::is_base_of_v<
 			TLayer<typename S::InServiceType, typename S::OutServiceType>,
 			S>;

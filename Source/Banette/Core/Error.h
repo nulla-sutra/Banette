@@ -19,7 +19,7 @@ namespace Banette::Core
 	// using TResult = TValueOrError<ValueT, ErrorT>;
 
 	template <typename V, Error::CUnifiedError E = UE::UnifiedError::FError>
-	class TResult : public TValueOrError<V, E>
+	class TResult : public TValueOrError<V, UE::UnifiedError::FError>
 	{
 	public:
 		~TResult() = default;

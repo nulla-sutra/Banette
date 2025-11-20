@@ -8,33 +8,26 @@
 
 namespace Banette::Core
 {
-	template <typename RequestT, typename ResponseT, Error::CUnifiedError ErrorT = UE::UnifiedError::FError>
-	class TService : public TSharedFromThis<TService<RequestT, ResponseT, ErrorT>>
+	template <typename RequestT, typename ResponseT>
+	class TService : public TSharedFromThis<TService<RequestT, ResponseT>>
 	{
 	public:
 		using RequestType = RequestT;
 		using ResponseType = ResponseT;
-		using ErrorType = ErrorT;
 
 		virtual ~TService() = default;
 
-		virtual UE5Coro::TCoroutine<TResult<ResponseT, ErrorT>> Call(const RequestT& Request) = 0;
+		virtual UE5Coro::TCoroutine<TResult<ResponseT>> Call(const RequestT& Request) = 0;
 	};
 
 
-	template <typename RequestT, typename ResponseT, typename ErrorT= UE::UnifiedError::FError>
-	using TServiceRef = TSharedRef<TService<RequestT, ResponseT, ErrorT>>;
+	template <typename RequestT, typename ResponseT>
+	using TServiceRef = TSharedRef<TService<RequestT, ResponseT>>;
 
 
 	template <typename S>
 	concept CService =
-		// requires
-		// {
-		// 	typename S::RequestType;
-		// 	typename S::ResponseType;
-		// 	typename S::ErrorType;
-		// } &&
 		std::is_base_of_v<
-			TService<typename S::RequestType, typename S::ResponseType, typename S::ErrorType>,
+			TService<typename S::RequestType, typename S::ResponseType>,
 			S>;
 }

@@ -21,7 +21,6 @@ namespace Banette::Kit
 	public:
 		using RequestType = ServiceT::RequestType;
 		using ResponseType = ServiceT::ResponseType;
-		using ErrorType = ServiceT::ErrorType;
 
 		struct FRetryConfig
 		{
@@ -63,7 +62,7 @@ namespace Banette::Kit
 
 			virtual ~FRetryService() override = default;
 
-			virtual UE5Coro::TCoroutine<TResult<ResponseType, ErrorType>> Call(
+			virtual UE5Coro::TCoroutine<TResult<ResponseType>> Call(
 				const RequestType& Request) override
 			{
 				for (int32 Attempt = 1; Attempt <= Config.MaxAttempts; ++Attempt)

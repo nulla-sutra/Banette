@@ -5,105 +5,119 @@
 #include "CoreMinimal.h"
 #include "Banette.h"
 
-// A generic, type-safe extraction layer for Banette.
-
 namespace Banette::Kit
 {
 	using namespace Banette::Core;
 
 	using FExtractor = TFunction<TSharedPtr<void>(const TArray<uint8>&)>;
 
+	using FExtractorMap = TMap<FString, FExtractor>;
 
 	template <typename ResponseT>
 	struct TExtractable
 	{
-		static void GetBytes(const ResponseT& Response, TArray<uint8>& InBytes)
+		static const TArray<uint8>& GetBytes(const ResponseT& Response)
 		{
 			unimplemented()
-		};
+			return {};
+		}
 
-		static FString GetContentType(const ResponseT& Response)
+		static FString GetTypeKey(const ResponseT& Response)
 		{
 			unimplemented()
-			return TEXT("");
+			return "";
 		}
 	};
 
 	template <typename BaseResponseT>
-	struct TExtractedResponse : TTuple<BaseResponseT, TMap<FString, FExtractor>>
+	struct TExtractedResponse : TTuple<BaseResponseT, TSharedPtr<void>>
 	{
+		const BaseResponseT& GetBase() const { return this->template Get<0>(); }
+
 		template <typename T>
 		TSharedPtr<T> GetContent() const
 		{
-			auto& Extractors = this->template Get<1>();
-			auto& Response = this->template Get<0>();
-			TArray<uint8> Bytes;
-			TExtractable<BaseResponseT>::GetBytes(Response, Bytes);
-			const auto ContentType = TExtractable<BaseResponseT>::GetContentType(Response);
-			if (const auto Extractor = Extractors.Find(ContentType))
-			{
-				const auto Result = (*Extractor)(Bytes);
-				return StaticCastSharedPtr<T>(Result);
-			}
-
-			return nullptr;
+			return StaticCastSharedPtr<T>(this->template Get<1>());
 		}
 	};
 
-
-	template <CService InService, typename OutService = TService<
-		typename InService::RequestType, TExtractedResponse<typename InService::ResponseType>>>
-	class TExtractLayer : public TLayer<InService, OutService>
+	template <CService InService>
+	class TExtractLayer : public TLayer<
+			InService,
+			TService<
+				typename InService::RequestType,
+				TExtractedResponse<typename InService::ResponseType>
+			>
+		>
 	{
-	protected:
-		TMap<FString, FExtractor> Extractors;
-
 	public:
-		virtual ~TExtractLayer() override = default;
+		using FBaseResponse = InService::ResponseType;
+		using FWrapperResponse = TExtractedResponse<typename InService::ResponseType>;
+		using FOutService = TService<typename InService::RequestType, FWrapperResponse>;
+
+		TExtractLayer()
+			: Extractors(MakeShared<FExtractorMap>())
+		{
+		}
 
 		TExtractLayer& Register(const FString& TypeKey, const FExtractor& Extractor)
 		{
-			Extractors.Add(TypeKey, Extractor);
+			Extractors->Add(TypeKey, Extractor);
 			return *this;
 		}
 
-		virtual TSharedRef<OutService> Wrap(TSharedRef<InService> Inner) override
+		virtual TSharedRef<FOutService> Wrap(TSharedRef<InService> Inner) override
 		{
-			return MakeShared<FExtractService>(Inner, Extractors);
+			return MakeShared<FExtractService>(Inner, Extractors.ToSharedRef());
 		}
 
-		class FExtractService : public TService<typename InService::RequestType, TExtractedResponse<typename
-			                                        InService::ResponseType>>
+	private:
+		TSharedPtr<FExtractorMap> Extractors;
+
+		class FExtractService : public FOutService
 		{
 		public:
-			explicit FExtractService(TSharedRef<InService> InInnerService,
-			                         const TMap<FString, FExtractor>& InExtractors)
-				: InnerService(InInnerService),
-				  SavedExtractors(InExtractors)
+			explicit FExtractService(
+				TSharedRef<InService> InInner,
+				const TSharedRef<const FExtractorMap>& InExtractors
+			)
+				: InnerService(InInner)
+				  , Extractors(InExtractors)
 			{
 			}
 
-			virtual UE5Coro::TCoroutine<TResult<typename FExtractService::ResponseType>>
-			Call(const FExtractService::RequestType& Request) override
+			virtual UE5Coro::TCoroutine<TResult<FWrapperResponse>>
+			Call(const InService::RequestType& Request) override
 			{
-				const TResult<typename InService::ResponseType> Result = co_await InnerService->Call(Request);
+				auto Result = co_await InnerService->Call(Request);
 
-				if (!Result.IsValid())
+				if (Result.HasError())
 				{
 					co_return MakeError(Result.GetError());
 				}
 
-				const auto Raw = Result.GetValue();
+				FBaseResponse BaseResponse = Result.StealValue();
 
-				co_return MakeValue(MakeTuple(Raw, SavedExtractors));
+				const TArray<uint8>& Bytes = TExtractable<FBaseResponse>::GetBytes(BaseResponse);
+				const FString TypeKey = TExtractable<FBaseResponse>::GetTypeKey(BaseResponse);
+
+				TSharedPtr<void> ParsedContent = nullptr;
+
+				if (const FExtractor* Found = Extractors->Find(TypeKey))
+				{
+					if (Bytes.Num() > 0)
+					{
+						ParsedContent = (*Found)(Bytes);
+					}
+					co_return MakeValue(MakeTuple(MoveTemp(BaseResponse), MoveTemp(ParsedContent)));
+				}
+
+				co_return TResult<FWrapperResponse>();
 			}
 
-		protected:
+		private:
 			TSharedRef<InService> InnerService;
-			const TMap<FString, FExtractor> SavedExtractors;
+			TSharedRef<const FExtractorMap> Extractors;
 		};
-
-		friend class FExtractService;
 	};
 }
-

@@ -25,7 +25,7 @@ FVoidCoroutine UBanetteTestLibrary::Test(FLatentActionInfo LatentInfo)
 	});
 
 	const auto WrappedService =
-		Banette::Pipeline::TServiceBuilder<>::New(HttpService)
+		TServiceBuilder<>::New(HttpService)
 		.Layer(RetryLayer)
 		.Build();
 
@@ -49,12 +49,13 @@ FVoidCoroutine UBanetteTestLibrary::Test(FLatentActionInfo LatentInfo)
 template <>
 struct TExtractable<FHttpResponse>
 {
-	static void GetBytes(const FHttpResponse& Response, TArray<uint8>& InBytes)
+	static const TArray<uint8>& GetBytes(const FHttpResponse& Response)
+
 	{
-		InBytes = Response.Body;
+		return Response.Body;
 	};
 
-	static FString GetContentType(const FHttpResponse& Response)
+	static FString GetTypeKey(const FHttpResponse& Response)
 	{
 		return Response.ContentType;
 	}
