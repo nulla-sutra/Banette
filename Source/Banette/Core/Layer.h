@@ -15,7 +15,7 @@ namespace Banette::Core
 
 		virtual ~TLayer() = default;
 
-		virtual TSharedRef<OutService> Wrap(TSharedRef<InServiceT> Inner) = 0;
+		virtual TSharedRef<OutService> Wrap(TSharedRef<InServiceT> Inner) const = 0;
 	};
 
 	template <typename S>

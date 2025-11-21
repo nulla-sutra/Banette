@@ -42,7 +42,7 @@ namespace Banette::Kit
 		virtual ~TRetryLayer() override = default;
 
 		/// Wraps the inner Service with retry logic
-		virtual TSharedRef<ServiceT> Wrap(TSharedRef<ServiceT> Inner) override
+		virtual TSharedRef<ServiceT> Wrap(TSharedRef<ServiceT> Inner) const override
 		{
 			return MakeShared<FRetryService>(Inner, Config);
 		}

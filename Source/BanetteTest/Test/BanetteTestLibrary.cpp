@@ -11,46 +11,10 @@ using namespace Banette::Transport::Http;
 using namespace Banette::Pipeline;
 using namespace Banette::Kit;
 
-FVoidCoroutine UBanetteTestLibrary::Test(FLatentActionInfo LatentInfo)
-{
-	const auto HttpService = MakeShared<FHttpService>();
-
-	TRetryLayer<FHttpService> RetryLayer({
-		.MaxAttempts = 5,
-		.DelayBetweenRetries = 0.5f,
-		.Challenge = [](const FHttpService::ResponseType& Response)
-		{
-			return Response.bSucceeded;
-		}
-	});
-
-	const auto WrappedService =
-		TServiceBuilder<>::New(HttpService)
-		.Layer(RetryLayer)
-		.Build();
-
-	FHttpRequest Request;
-	Request.Url = TEXT("https://httpbin.org/get");
-	Request.Method = EHttpMethod::Get;
-
-	if (auto Result = co_await WrappedService->Call(Request); Result.IsValid())
-	{
-		const auto& Response = Result.GetValue();
-		UE_LOG(LogTemp, Log, TEXT("HTTP Request succeeded with status code: %d"), Response.StatusCode);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("HTTP Request failed after retries"));
-	}
-
-	co_return;
-}
-
 template <>
-struct TExtractable<FHttpResponse>
+struct Banette::Kit::TExtractable<FHttpResponse>
 {
 	static const TArray<uint8>& GetBytes(const FHttpResponse& Response)
-
 	{
 		return Response.Body;
 	};
@@ -61,45 +25,69 @@ struct TExtractable<FHttpResponse>
 	}
 };
 
-FVoidCoroutine UBanetteTestLibrary::Test2(FLatentActionInfo LatentInfo)
+FVoidCoroutine UBanetteTestLibrary::Test(FJsonObjectWrapper& Json, FLatentActionInfo LatentInfo)
 {
 	const auto HttpService = MakeShared<FHttpService>();
 
 	TExtractLayer<FHttpService> ExtractLayer;
 
-	ExtractLayer.Register("application/json",
-	                      [](const TArray<uint8>& Bytes)
-	                      {
-		                      auto Json = MakeShared<FJsonObject>();
-		                      Json->SetNumberField("test", 123);
-		                      return Json;
-	                      });
+	ExtractLayer.Register(
+		"application/json",
+		[](const TArray<uint8>& Bytes)
+		{
+			const FString JsonString = FString(
+				StringCast<TCHAR>(reinterpret_cast<const char*>(Bytes.GetData())).Get()
+			);
 
-	ExtractLayer.Register("text/plain",
-	                      [](const TArray<uint8>& Bytes)
-	                      {
-		                      return MakeShared<FString>();
-	                      }
+			TSharedPtr<FJsonObject> OutJson;
+			const TSharedRef<TJsonReader<>> Reader =
+				TJsonReaderFactory<>::Create(JsonString);
+
+			UE_LOG(LogTemp, Warning, TEXT("JSON: [%s]"), *JsonString);
+
+			FJsonSerializer::Deserialize(Reader, OutJson);
+			return OutJson;
+		});
+
+	ExtractLayer.Register(
+		"text/plain",
+		[](const TArray<uint8>& Bytes)
+		{
+			if (Bytes.Num() == 0)
+			{
+				return MakeShared<FString>();
+			}
+
+			const FString Str = FString(
+				StringCast<TCHAR>(reinterpret_cast<const char*>(Bytes.GetData())).Get()
+			);
+			return MakeShared<FString>(Str);
+		}
 	);
 
+	const TRetryLayer<FHttpService> RetryLayer({
+		.MaxAttempts = 5,
+		.DelayBetweenRetries = 0.5f,
+	});
 
 	const auto WrappedService =
 		TServiceBuilder<>::New(HttpService)
+		.Layer(RetryLayer)
 		.Layer(ExtractLayer)
 		.Build();
 
 	FHttpRequest Request;
-	Request.Url = TEXT("https://httpbin.org/get");
+	Request.Url = TEXT("https://httpbin.org/json");
 	Request.Method = EHttpMethod::Get;
 
 	if (auto Result = co_await WrappedService->Call(Request); Result.IsValid())
 	{
 		const auto& Response = Result.GetValue();
-		const auto Json = Response.GetContent<FJsonObject>();
+		const auto JsonContent = Response.GetContent<FJsonObject>();
 
-		if (Json.IsValid())
+		if (JsonContent.IsValid())
 		{
-			check(0);
+			Json.JsonObject = JsonContent;
 		}
 	}
 	else

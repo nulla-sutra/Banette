@@ -29,6 +29,13 @@ namespace Banette::Kit
 		}
 	};
 
+	template <typename T>
+	concept CExtractable = requires(const T& Type)
+	{
+		{ TExtractable<T>::GetBytes(Type) } -> std::convertible_to<const TArray<uint8>&>;
+		{ TExtractable<T>::GetTypeKey(Type) } -> std::convertible_to<FString>;
+	};
+
 	template <typename BaseResponseT>
 	struct TExtractedResponse : TTuple<BaseResponseT, TSharedPtr<void>>
 	{
@@ -42,6 +49,7 @@ namespace Banette::Kit
 	};
 
 	template <CService InService>
+		requires CExtractable<typename InService::ResponseType>
 	class TExtractLayer : public TLayer<
 			InService,
 			TService<
@@ -66,7 +74,7 @@ namespace Banette::Kit
 			return *this;
 		}
 
-		virtual TSharedRef<FOutService> Wrap(TSharedRef<InService> Inner) override
+		virtual TSharedRef<FOutService> Wrap(TSharedRef<InService> Inner) const override
 		{
 			return MakeShared<FExtractService>(Inner, Extractors.ToSharedRef());
 		}
