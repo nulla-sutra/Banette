@@ -106,6 +106,7 @@ namespace Banette::Kit
 
 				FBaseResponse BaseResponse = Result.StealValue();
 
+				// CRTP
 				const TArray<uint8>& Bytes = TExtractable<FBaseResponse>::GetBytes(BaseResponse);
 				const FString TypeKey = TExtractable<FBaseResponse>::GetTypeKey(BaseResponse);
 

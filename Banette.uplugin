@@ -33,6 +33,11 @@
 			"Name": "BanetteTest",
 			"Type": "UncookedOnly",
 			"LoadingPhase": "PostConfigInit"
+		},
+		{
+			"Name": "BanetteGenerator",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
 		}
 	],
 	"Plugins": [
