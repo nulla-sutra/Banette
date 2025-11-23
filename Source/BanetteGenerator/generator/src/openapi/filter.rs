@@ -88,7 +88,7 @@ pub(crate) fn is_required_filter(value: &Value, args: &HashMap<String, Value>) -
 /// Convert an OpenAPI path to a PascalCase function name and append the HTTP method.
 ///
 /// Handles path parameters (enclosed in `{}`) by converting them to PascalCase.
-/// 
+///
 /// Examples:
 /// - `/v1/player/characters`, method="get" -> `V1PlayerCharacters_GET`
 /// - `/character/{id}`, method="get" -> `CharacterId_GET`
@@ -151,7 +151,7 @@ pub(crate) fn path_to_func_name_filter(
 /// Convert a string to PascalCase.
 ///
 /// Handles underscores, hyphens, and camelCase/snake_case inputs.
-/// 
+///
 /// Examples:
 /// - `id` -> `Id`
 /// - `user_id` -> `UserId`
@@ -239,7 +239,7 @@ mod tests {
     fn test_path_to_func_name_simple_path() {
         let path = json!("/v1/player/characters");
         let args = create_method_args("get");
-        
+
         let result = path_to_func_name_filter(&path, &args).unwrap();
         assert_eq!(result.as_str().unwrap(), "V1PlayerCharacters_GET");
     }
@@ -248,7 +248,7 @@ mod tests {
     fn test_path_to_func_name_with_single_parameter() {
         let path = json!("/character/{id}");
         let args = create_method_args("get");
-        
+
         let result = path_to_func_name_filter(&path, &args).unwrap();
         assert_eq!(result.as_str().unwrap(), "CharacterId_GET");
     }
@@ -257,7 +257,7 @@ mod tests {
     fn test_path_to_func_name_with_snake_case_parameter() {
         let path = json!("/user/{user_id}");
         let args = create_method_args("get");
-        
+
         let result = path_to_func_name_filter(&path, &args).unwrap();
         assert_eq!(result.as_str().unwrap(), "UserUserId_GET");
     }
@@ -266,7 +266,7 @@ mod tests {
     fn test_path_to_func_name_with_multiple_parameters() {
         let path = json!("/user/{user_id}/posts/{post_id}");
         let args = create_method_args("get");
-        
+
         let result = path_to_func_name_filter(&path, &args).unwrap();
         assert_eq!(result.as_str().unwrap(), "UserUserIdPostsPostId_GET");
     }
@@ -275,7 +275,7 @@ mod tests {
     fn test_path_to_func_name_with_hyphenated_parameter() {
         let path = json!("/resource/{resource-id}");
         let args = create_method_args("delete");
-        
+
         let result = path_to_func_name_filter(&path, &args).unwrap();
         assert_eq!(result.as_str().unwrap(), "ResourceResourceId_DELETE");
     }
@@ -284,15 +284,18 @@ mod tests {
     fn test_path_to_func_name_complex_path() {
         let path = json!("/api/v2/{resource_id}/sub/{sub_id}/details");
         let args = create_method_args("post");
-        
+
         let result = path_to_func_name_filter(&path, &args).unwrap();
-        assert_eq!(result.as_str().unwrap(), "ApiV2ResourceIdSubSubIdDetails_POST");
+        assert_eq!(
+            result.as_str().unwrap(),
+            "ApiV2ResourceIdSubSubIdDetails_POST"
+        );
     }
 
     #[test]
     fn test_path_to_func_name_different_methods() {
         let path = json!("/items/{id}");
-        
+
         // Test with GET
         let args_get = create_method_args("get");
         let result_get = path_to_func_name_filter(&path, &args_get).unwrap();
@@ -319,7 +322,7 @@ mod tests {
         // Test that camelCase parameters are converted correctly
         let path = json!("/resource/{userId}");
         let args = create_method_args("get");
-        
+
         let result = path_to_func_name_filter(&path, &args).unwrap();
         assert_eq!(result.as_str().unwrap(), "ResourceUserId_GET");
     }
@@ -340,7 +343,7 @@ mod tests {
         // Test empty path segments (shouldn't happen in real APIs, but good to handle)
         let path = json!("/api//resource/{id}");
         let args = create_method_args("get");
-        
+
         let result = path_to_func_name_filter(&path, &args).unwrap();
         assert_eq!(result.as_str().unwrap(), "ApiResourceId_GET");
     }
@@ -349,7 +352,7 @@ mod tests {
     fn test_path_to_func_name_only_parameter() {
         let path = json!("/{id}");
         let args = create_method_args("get");
-        
+
         let result = path_to_func_name_filter(&path, &args).unwrap();
         assert_eq!(result.as_str().unwrap(), "Id_GET");
     }
@@ -358,7 +361,7 @@ mod tests {
     fn test_path_to_func_name_missing_method() {
         let path = json!("/users");
         let args = HashMap::new(); // No method provided
-        
+
         let result = path_to_func_name_filter(&path, &args);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("method"));
@@ -368,9 +371,14 @@ mod tests {
     fn test_path_to_func_name_invalid_path_type() {
         let path = json!(123); // Not a string
         let args = create_method_args("get");
-        
+
         let result = path_to_func_name_filter(&path, &args);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Path must be a string"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Path must be a string")
+        );
     }
 }
