@@ -60,8 +60,8 @@ public:
         {%- endif -%}
         
         {%- if operation.responses -%}
-            {%- set body_type = operation.responses | request_body_schema | to_ue_type -%}
-            const {{ body_type }}& ResponseBody,
+            {%- set body_type = operation.responses | response_body_schema | to_ue_type -%}
+            {{ body_type }}& ResponseBody,
         {%- endif -%}
         
         FLatentActionInfo LatentInfo
