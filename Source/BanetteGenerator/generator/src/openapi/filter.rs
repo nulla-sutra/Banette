@@ -347,6 +347,7 @@ mod tests {
         assert_eq!(convert_to_pascal_case("resource-name"), "ResourceName");
         assert_eq!(convert_to_pascal_case("userId"), "UserId");
         assert_eq!(convert_to_pascal_case("post_author_id"), "PostAuthorId");
+        assert_eq!(convert_to_pascal_case("userId_name"), "UserIdName");
         assert_eq!(convert_to_pascal_case("resource-type-id"), "ResourceTypeId");
         assert_eq!(convert_to_pascal_case("mixed_case-value"), "MixedCaseValue");
     }
