@@ -85,15 +85,15 @@ pub(crate) fn is_required_filter(value: &Value, args: &HashMap<String, Value>) -
         .map_err(|e| tera::Error::msg(format!("Failed to convert bool to Value: {}", e)))
 }
 
-/// Convert an OpenAPI path to a PascalCase function name and append the HTTP method.
+/// Convert an OpenAPI path to a PascalCase function name with the HTTP method prefix.
 ///
-/// Handles path parameters (enclosed in `{}`) by converting them to PascalCase.
+/// Handles path parameters (enclosed in `{}`) by converting them to PascalCase and grouping them with "By_" prefix.
 ///
 /// Examples:
-/// - `/v1/player/characters`, method="get" -> `V1PlayerCharacters_GET`
-/// - `/character/{id}`, method="get" -> `CharacterId_GET`
-/// - `/user/{user_id}/posts`, method="get" -> `UserUserIdPosts_GET`
-/// - `/api/{resource_id}/sub/{sub_id}`, method="post" -> `ApiResourceIdSubSubId_POST`
+/// - `/v1/player/characters`, method="get" -> `GET_V1_Player_Characters`
+/// - `/character/{id}`, method="get" -> `GET_Character_By_Id`
+/// - `/user/{user_id}/posts`, method="get" -> `GET_User_Posts_By_UserId`
+/// - `/api/{resource_id}/sub/{sub_id}`, method="post" -> `POST_Api_Sub_By_ResourceId_SubId`
 pub(crate) fn path_to_func_name_filter(
     value: &Value,
     args: &HashMap<String, Value>,
@@ -112,9 +112,10 @@ pub(crate) fn path_to_func_name_filter(
     // 2. Remove the leading slash
     let cleaned_path = path.trim_start_matches('/');
 
-    // 3. Split and apply PascalCase transformation
+    // 3. Split and separate into regular segments and parameters
     let parts: Vec<&str> = cleaned_path.split('/').collect();
-    let mut func_base_name = String::new();
+    let mut regular_segments = Vec::new();
+    let mut parameters = Vec::new();
 
     for part in parts {
         if part.is_empty() {
@@ -122,7 +123,7 @@ pub(crate) fn path_to_func_name_filter(
         }
 
         // Check if this part is a path parameter (enclosed in {})
-        let processed_part = if part.starts_with('{') && part.ends_with('}') {
+        if part.starts_with('{') && part.ends_with('}') {
             // Remove the braces
             let param_name = &part[1..part.len() - 1];
 
@@ -132,27 +133,31 @@ pub(crate) fn path_to_func_name_filter(
                 continue;
             }
 
-            // Convert parameter name to PascalCase
-            convert_to_pascal_case(param_name)
+            // Convert parameter name to PascalCase and add to parameters list
+            parameters.push(convert_to_pascal_case(param_name));
         } else {
-            // Regular path segment - just capitalize the first character
-            let mut chars = part.chars();
-            if let Some(first_char) = chars.next() {
-                let mut result = first_char.to_uppercase().to_string();
-                result.push_str(chars.as_str());
-                result
-            } else {
-                String::new()
-            }
-        };
-
-        func_base_name.push_str(&processed_part);
+            // Regular path segment - convert to PascalCase for consistency
+            regular_segments.push(convert_to_pascal_case(part));
+        }
     }
 
-    // 4. Combine the function name and the method
-    let final_name = format!("{}_{}", func_base_name, method);
+    // 4. Build the function name: METHOD_Segments_By_Parameters
+    let mut func_name = method.clone();
+    
+    // Add regular segments separated by underscores
+    if !regular_segments.is_empty() {
+        func_name.push('_');
+        func_name.push_str(&regular_segments.join("_"));
+    }
+    
+    // Add parameters with "By_" prefix
+    if !parameters.is_empty() {
+        func_name.push_str("_By_");
+        // All parameters: By_Param1_Param2_Param3
+        func_name.push_str(&parameters.join("_"));
+    }
 
-    Ok(to_value(final_name)?)
+    Ok(to_value(func_name)?)
 }
 
 /// Convert a string to PascalCase.
@@ -408,7 +413,7 @@ mod tests {
         let args = create_method_args("get");
 
         let result = path_to_func_name_filter(&path, &args).unwrap();
-        assert_eq!(result.as_str().unwrap(), "V1PlayerCharacters_GET");
+        assert_eq!(result.as_str().unwrap(), "GET_V1_Player_Characters");
     }
 
     #[test]
@@ -417,7 +422,7 @@ mod tests {
         let args = create_method_args("get");
 
         let result = path_to_func_name_filter(&path, &args).unwrap();
-        assert_eq!(result.as_str().unwrap(), "CharacterId_GET");
+        assert_eq!(result.as_str().unwrap(), "GET_Character_By_Id");
     }
 
     #[test]
@@ -426,7 +431,7 @@ mod tests {
         let args = create_method_args("get");
 
         let result = path_to_func_name_filter(&path, &args).unwrap();
-        assert_eq!(result.as_str().unwrap(), "UserUserId_GET");
+        assert_eq!(result.as_str().unwrap(), "GET_User_By_UserId");
     }
 
     #[test]
@@ -435,7 +440,7 @@ mod tests {
         let args = create_method_args("get");
 
         let result = path_to_func_name_filter(&path, &args).unwrap();
-        assert_eq!(result.as_str().unwrap(), "UserUserIdPostsPostId_GET");
+        assert_eq!(result.as_str().unwrap(), "GET_User_Posts_By_UserId_PostId");
     }
 
     #[test]
@@ -444,7 +449,7 @@ mod tests {
         let args = create_method_args("delete");
 
         let result = path_to_func_name_filter(&path, &args).unwrap();
-        assert_eq!(result.as_str().unwrap(), "ResourceResourceId_DELETE");
+        assert_eq!(result.as_str().unwrap(), "DELETE_Resource_By_ResourceId");
     }
 
     #[test]
@@ -455,7 +460,7 @@ mod tests {
         let result = path_to_func_name_filter(&path, &args).unwrap();
         assert_eq!(
             result.as_str().unwrap(),
-            "ApiV2ResourceIdSubSubIdDetails_POST"
+            "POST_Api_V2_Sub_Details_By_ResourceId_SubId"
         );
     }
 
@@ -466,22 +471,22 @@ mod tests {
         // Test with GET
         let args_get = create_method_args("get");
         let result_get = path_to_func_name_filter(&path, &args_get).unwrap();
-        assert_eq!(result_get.as_str().unwrap(), "ItemsId_GET");
+        assert_eq!(result_get.as_str().unwrap(), "GET_Items_By_Id");
 
         // Test with POST
         let args_post = create_method_args("post");
         let result_post = path_to_func_name_filter(&path, &args_post).unwrap();
-        assert_eq!(result_post.as_str().unwrap(), "ItemsId_POST");
+        assert_eq!(result_post.as_str().unwrap(), "POST_Items_By_Id");
 
         // Test with PUT
         let args_put = create_method_args("put");
         let result_put = path_to_func_name_filter(&path, &args_put).unwrap();
-        assert_eq!(result_put.as_str().unwrap(), "ItemsId_PUT");
+        assert_eq!(result_put.as_str().unwrap(), "PUT_Items_By_Id");
 
         // Test with DELETE
         let args_delete = create_method_args("delete");
         let result_delete = path_to_func_name_filter(&path, &args_delete).unwrap();
-        assert_eq!(result_delete.as_str().unwrap(), "ItemsId_DELETE");
+        assert_eq!(result_delete.as_str().unwrap(), "DELETE_Items_By_Id");
     }
 
     #[test]
@@ -491,7 +496,7 @@ mod tests {
         let args = create_method_args("get");
 
         let result = path_to_func_name_filter(&path, &args).unwrap();
-        assert_eq!(result.as_str().unwrap(), "ResourceUserId_GET");
+        assert_eq!(result.as_str().unwrap(), "GET_Resource_By_UserId");
     }
 
     #[test]
@@ -513,7 +518,7 @@ mod tests {
         let args = create_method_args("get");
 
         let result = path_to_func_name_filter(&path, &args).unwrap();
-        assert_eq!(result.as_str().unwrap(), "ApiResourceId_GET");
+        assert_eq!(result.as_str().unwrap(), "GET_Api_Resource_By_Id");
     }
 
     #[test]
@@ -522,7 +527,7 @@ mod tests {
         let args = create_method_args("get");
 
         let result = path_to_func_name_filter(&path, &args).unwrap();
-        assert_eq!(result.as_str().unwrap(), "Id_GET");
+        assert_eq!(result.as_str().unwrap(), "GET_By_Id");
     }
 
     #[test]
@@ -558,7 +563,7 @@ mod tests {
 
         let result = path_to_func_name_filter(&path, &args).unwrap();
         // Empty braces should be skipped
-        assert_eq!(result.as_str().unwrap(), "ApiResource_GET");
+        assert_eq!(result.as_str().unwrap(), "GET_Api_Resource");
     }
 
     #[test]
@@ -573,5 +578,42 @@ mod tests {
         assert_eq!(convert_to_pascal_case("___"), "");
         assert_eq!(convert_to_pascal_case("---"), "");
         assert_eq!(convert_to_pascal_case("_-_"), "");
+    }
+
+    /// Tests for the specific examples from the problem statement
+    #[test]
+    fn test_path_to_func_name_problem_statement_example_1() {
+        let path = json!("/v1/player/characters");
+        let args = create_method_args("get");
+
+        let result = path_to_func_name_filter(&path, &args).unwrap();
+        assert_eq!(result.as_str().unwrap(), "GET_V1_Player_Characters");
+    }
+
+    #[test]
+    fn test_path_to_func_name_problem_statement_example_2() {
+        let path = json!("/character/{id}");
+        let args = create_method_args("get");
+
+        let result = path_to_func_name_filter(&path, &args).unwrap();
+        assert_eq!(result.as_str().unwrap(), "GET_Character_By_Id");
+    }
+
+    #[test]
+    fn test_path_to_func_name_problem_statement_example_3() {
+        let path = json!("/user/{user_id}/posts");
+        let args = create_method_args("get");
+
+        let result = path_to_func_name_filter(&path, &args).unwrap();
+        assert_eq!(result.as_str().unwrap(), "GET_User_Posts_By_UserId");
+    }
+
+    #[test]
+    fn test_path_to_func_name_problem_statement_example_4() {
+        let path = json!("/api/{resource_id}/sub/{sub_id}");
+        let args = create_method_args("post");
+
+        let result = path_to_func_name_filter(&path, &args).unwrap();
+        assert_eq!(result.as_str().unwrap(), "POST_Api_Sub_By_ResourceId_SubId");
     }
 }
