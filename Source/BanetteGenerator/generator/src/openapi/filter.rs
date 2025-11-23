@@ -93,7 +93,7 @@ pub(crate) fn is_required_filter(value: &Value, args: &HashMap<String, Value>) -
 /// - `/v1/player/characters`, method="get" -> `GET_V1_Player_Characters`
 /// - `/character/{id}`, method="get" -> `GET_Character_By_Id`
 /// - `/user/{user_id}/posts`, method="get" -> `GET_User_Posts_By_UserId`
-/// - `/api/{resource_id}/sub/{sub_id}`, method="post" -> `POST_Api_Sub_By__ResourceId_SubId`
+/// - `/api/{resource_id}/sub/{sub_id}`, method="post" -> `POST_Api_Sub_By_ResourceId_SubId`
 pub(crate) fn path_to_func_name_filter(
     value: &Value,
     args: &HashMap<String, Value>,
@@ -153,14 +153,8 @@ pub(crate) fn path_to_func_name_filter(
     // Add parameters with "By_" prefix
     if !parameters.is_empty() {
         func_name.push_str("_By_");
-        if parameters.len() == 1 {
-            // Single parameter: By_ParamName
-            func_name.push_str(&parameters[0]);
-        } else {
-            // Multiple parameters: By__Param1_Param2_Param3
-            func_name.push('_');
-            func_name.push_str(&parameters.join("_"));
-        }
+        // All parameters: By_Param1_Param2_Param3
+        func_name.push_str(&parameters.join("_"));
     }
 
     Ok(to_value(func_name)?)
@@ -446,7 +440,7 @@ mod tests {
         let args = create_method_args("get");
 
         let result = path_to_func_name_filter(&path, &args).unwrap();
-        assert_eq!(result.as_str().unwrap(), "GET_User_Posts_By__UserId_PostId");
+        assert_eq!(result.as_str().unwrap(), "GET_User_Posts_By_UserId_PostId");
     }
 
     #[test]
@@ -466,7 +460,7 @@ mod tests {
         let result = path_to_func_name_filter(&path, &args).unwrap();
         assert_eq!(
             result.as_str().unwrap(),
-            "POST_Api_V2_Sub_Details_By__ResourceId_SubId"
+            "POST_Api_V2_Sub_Details_By_ResourceId_SubId"
         );
     }
 
@@ -620,6 +614,6 @@ mod tests {
         let args = create_method_args("post");
 
         let result = path_to_func_name_filter(&path, &args).unwrap();
-        assert_eq!(result.as_str().unwrap(), "POST_Api_Sub_By__ResourceId_SubId");
+        assert_eq!(result.as_str().unwrap(), "POST_Api_Sub_By_ResourceId_SubId");
     }
 }
