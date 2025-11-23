@@ -87,7 +87,13 @@ pub(crate) fn is_required_filter(value: &Value, args: &HashMap<String, Value>) -
 
 /// Convert an OpenAPI path to a PascalCase function name and append the HTTP method.
 ///
-/// Example: /v1/player/characters, method="get" -> V1PlayerCharacters_GET
+/// Handles path parameters (enclosed in `{}`) by converting them to PascalCase.
+///
+/// Examples:
+/// - `/v1/player/characters`, method="get" -> `V1PlayerCharacters_GET`
+/// - `/character/{id}`, method="get" -> `CharacterId_GET`
+/// - `/user/{user_id}/posts`, method="get" -> `UserUserIdPosts_GET`
+/// - `/api/{resource_id}/sub/{sub_id}`, method="post" -> `ApiResourceIdSubSubId_POST`
 pub(crate) fn path_to_func_name_filter(
     value: &Value,
     args: &HashMap<String, Value>,
@@ -115,19 +121,78 @@ pub(crate) fn path_to_func_name_filter(
             continue;
         }
 
-        let mut chars = part.chars();
-        // Capitalize the first character
-        if let Some(first_char) = chars.next() {
-            func_base_name.push_str(&first_char.to_uppercase().to_string());
-            // Append the rest
-            func_base_name.push_str(chars.as_str());
-        }
+        // Check if this part is a path parameter (enclosed in {})
+        let processed_part = if part.starts_with('{') && part.ends_with('}') {
+            // Remove the braces
+            let param_name = &part[1..part.len() - 1];
+
+            // Validate that the parameter name is not empty
+            if param_name.is_empty() {
+                // Skip empty parameters like {}
+                continue;
+            }
+
+            // Convert parameter name to PascalCase
+            convert_to_pascal_case(param_name)
+        } else {
+            // Regular path segment - just capitalize the first character
+            let mut chars = part.chars();
+            if let Some(first_char) = chars.next() {
+                let mut result = first_char.to_uppercase().to_string();
+                result.push_str(chars.as_str());
+                result
+            } else {
+                String::new()
+            }
+        };
+
+        func_base_name.push_str(&processed_part);
     }
 
     // 4. Combine the function name and the method
     let final_name = format!("{}_{}", func_base_name, method);
 
     Ok(to_value(final_name)?)
+}
+
+/// Convert a string to PascalCase.
+///
+/// Handles underscores, hyphens, and camelCase/snake_case inputs.
+/// Returns an empty string if input is empty.
+///
+/// Examples:
+/// - `id` -> `Id`
+/// - `user_id` -> `UserId`
+/// - `resource-name` -> `ResourceName`
+/// - `userId` -> `UserId`
+fn convert_to_pascal_case(input: &str) -> String {
+    // Handle empty input
+    if input.is_empty() {
+        return String::new();
+    }
+
+    let mut result = String::new();
+    let mut capitalize_next = true;
+
+    for ch in input.chars() {
+        if ch == '_' || ch == '-' {
+            // Treat underscore and hyphen as word separators
+            capitalize_next = true;
+        } else if ch.is_uppercase() {
+            // If we encounter an uppercase letter in camelCase, keep it
+            result.push(ch);
+            capitalize_next = false;
+        } else if capitalize_next {
+            // Capitalize this character
+            result.push_str(&ch.to_uppercase().to_string());
+            capitalize_next = false;
+        } else {
+            // Keep the character as-is
+            result.push(ch);
+        }
+    }
+
+    result
 }
 
 pub fn get_request_body_schema_filter(
@@ -328,5 +393,191 @@ mod tests {
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
         assert!(error_msg.contains("must be a valid response object"));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    /// Helper function to create args for path_to_func_name_filter
+    fn create_method_args(method: &str) -> HashMap<String, Value> {
+        let mut args = HashMap::new();
+        args.insert("method".to_string(), to_value(method).unwrap());
+        args
+    }
+
+    #[test]
+    fn test_path_to_func_name_simple_path() {
+        let path = json!("/v1/player/characters");
+        let args = create_method_args("get");
+
+        let result = path_to_func_name_filter(&path, &args).unwrap();
+        assert_eq!(result.as_str().unwrap(), "V1PlayerCharacters_GET");
+    }
+
+    #[test]
+    fn test_path_to_func_name_with_single_parameter() {
+        let path = json!("/character/{id}");
+        let args = create_method_args("get");
+
+        let result = path_to_func_name_filter(&path, &args).unwrap();
+        assert_eq!(result.as_str().unwrap(), "CharacterId_GET");
+    }
+
+    #[test]
+    fn test_path_to_func_name_with_snake_case_parameter() {
+        let path = json!("/user/{user_id}");
+        let args = create_method_args("get");
+
+        let result = path_to_func_name_filter(&path, &args).unwrap();
+        assert_eq!(result.as_str().unwrap(), "UserUserId_GET");
+    }
+
+    #[test]
+    fn test_path_to_func_name_with_multiple_parameters() {
+        let path = json!("/user/{user_id}/posts/{post_id}");
+        let args = create_method_args("get");
+
+        let result = path_to_func_name_filter(&path, &args).unwrap();
+        assert_eq!(result.as_str().unwrap(), "UserUserIdPostsPostId_GET");
+    }
+
+    #[test]
+    fn test_path_to_func_name_with_hyphenated_parameter() {
+        let path = json!("/resource/{resource-id}");
+        let args = create_method_args("delete");
+
+        let result = path_to_func_name_filter(&path, &args).unwrap();
+        assert_eq!(result.as_str().unwrap(), "ResourceResourceId_DELETE");
+    }
+
+    #[test]
+    fn test_path_to_func_name_complex_path() {
+        let path = json!("/api/v2/{resource_id}/sub/{sub_id}/details");
+        let args = create_method_args("post");
+
+        let result = path_to_func_name_filter(&path, &args).unwrap();
+        assert_eq!(
+            result.as_str().unwrap(),
+            "ApiV2ResourceIdSubSubIdDetails_POST"
+        );
+    }
+
+    #[test]
+    fn test_path_to_func_name_different_methods() {
+        let path = json!("/items/{id}");
+
+        // Test with GET
+        let args_get = create_method_args("get");
+        let result_get = path_to_func_name_filter(&path, &args_get).unwrap();
+        assert_eq!(result_get.as_str().unwrap(), "ItemsId_GET");
+
+        // Test with POST
+        let args_post = create_method_args("post");
+        let result_post = path_to_func_name_filter(&path, &args_post).unwrap();
+        assert_eq!(result_post.as_str().unwrap(), "ItemsId_POST");
+
+        // Test with PUT
+        let args_put = create_method_args("put");
+        let result_put = path_to_func_name_filter(&path, &args_put).unwrap();
+        assert_eq!(result_put.as_str().unwrap(), "ItemsId_PUT");
+
+        // Test with DELETE
+        let args_delete = create_method_args("delete");
+        let result_delete = path_to_func_name_filter(&path, &args_delete).unwrap();
+        assert_eq!(result_delete.as_str().unwrap(), "ItemsId_DELETE");
+    }
+
+    #[test]
+    fn test_path_to_func_name_with_camel_case_parameter() {
+        // Test that camelCase parameters are converted correctly
+        let path = json!("/resource/{userId}");
+        let args = create_method_args("get");
+
+        let result = path_to_func_name_filter(&path, &args).unwrap();
+        assert_eq!(result.as_str().unwrap(), "ResourceUserId_GET");
+    }
+
+    #[test]
+    fn test_convert_to_pascal_case() {
+        assert_eq!(convert_to_pascal_case("id"), "Id");
+        assert_eq!(convert_to_pascal_case("user_id"), "UserId");
+        assert_eq!(convert_to_pascal_case("resource-name"), "ResourceName");
+        assert_eq!(convert_to_pascal_case("userId"), "UserId");
+        assert_eq!(convert_to_pascal_case("post_author_id"), "PostAuthorId");
+        assert_eq!(convert_to_pascal_case("userId_name"), "UserIdName");
+        assert_eq!(convert_to_pascal_case("resource-type-id"), "ResourceTypeId");
+        assert_eq!(convert_to_pascal_case("mixed_case-value"), "MixedCaseValue");
+    }
+
+    #[test]
+    fn test_path_to_func_name_edge_cases() {
+        // Test empty path segments (shouldn't happen in real APIs, but good to handle)
+        let path = json!("/api//resource/{id}");
+        let args = create_method_args("get");
+
+        let result = path_to_func_name_filter(&path, &args).unwrap();
+        assert_eq!(result.as_str().unwrap(), "ApiResourceId_GET");
+    }
+
+    #[test]
+    fn test_path_to_func_name_only_parameter() {
+        let path = json!("/{id}");
+        let args = create_method_args("get");
+
+        let result = path_to_func_name_filter(&path, &args).unwrap();
+        assert_eq!(result.as_str().unwrap(), "Id_GET");
+    }
+
+    #[test]
+    fn test_path_to_func_name_missing_method() {
+        let path = json!("/users");
+        let args = HashMap::new(); // No method provided
+
+        let result = path_to_func_name_filter(&path, &args);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("method"));
+    }
+
+    #[test]
+    fn test_path_to_func_name_invalid_path_type() {
+        let path = json!(123); // Not a string
+        let args = create_method_args("get");
+
+        let result = path_to_func_name_filter(&path, &args);
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Path must be a string")
+        );
+    }
+
+    #[test]
+    fn test_path_to_func_name_empty_braces() {
+        // Test that empty braces {} are handled gracefully
+        let path = json!("/api/{}/resource");
+        let args = create_method_args("get");
+
+        let result = path_to_func_name_filter(&path, &args).unwrap();
+        // Empty braces should be skipped
+        assert_eq!(result.as_str().unwrap(), "ApiResource_GET");
+    }
+
+    #[test]
+    fn test_convert_to_pascal_case_empty_string() {
+        // Test that empty string returns empty string
+        assert_eq!(convert_to_pascal_case(""), "");
+    }
+
+    #[test]
+    fn test_convert_to_pascal_case_only_separators() {
+        // Test strings with only separators
+        assert_eq!(convert_to_pascal_case("___"), "");
+        assert_eq!(convert_to_pascal_case("---"), "");
+        assert_eq!(convert_to_pascal_case("_-_"), "");
     }
 }
