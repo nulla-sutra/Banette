@@ -167,6 +167,166 @@ pub fn get_request_body_schema_filter(
     ))
 }
 
+/// Tera filter to extract the schema from an OpenAPI response object.
+///
+/// The filter attempts to extract the schema in the following order:
+/// 1. First, it looks for "application/json" media type
+/// 2. If not found, it falls back to the first available media type
+///
+/// Usage in template: {{ response | get_response_schema }}
 pub fn get_response_schema_filter(value: &Value, _args: &HashMap<String, Value>) -> Result<Value> {
-    todo!()
+    // 1. Check that the input is an object
+    let response = value.as_object().ok_or_else(|| {
+        tera::Error::msg("Input to get_response_schema must be a valid response object.")
+    })?;
+
+    // 2. Get the "content" field
+    let content = response
+        .get("content")
+        .ok_or_else(|| tera::Error::msg("Response object is missing 'content' field."))?;
+
+    // 3. Try to find the schema for "application/json"
+    if let Some(schema_obj) = content
+        .get("application/json")
+        .and_then(|json_media_type| json_media_type.get("schema"))
+    {
+        return Ok(schema_obj.clone());
+    }
+
+    // 4. Fallback: if there is no application/json, try the first available media type
+    if let Some(content_map) = content.as_object()
+        && let Some((_, media_type)) = content_map.iter().next()
+        && let Some(schema_obj) = media_type.get("schema")
+    {
+        return Ok(schema_obj.clone());
+    }
+
+    // 5. Failure handling
+    Err(tera::Error::msg(
+        "Could not find a valid schema object within response content (checked application/json and first available type).",
+    ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_get_response_schema_with_application_json() {
+        // Create a mock response object with application/json
+        let response = json!({
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "id": { "type": "integer" },
+                            "name": { "type": "string" }
+                        }
+                    }
+                }
+            }
+        });
+
+        let value = to_value(&response).unwrap();
+        let result = get_response_schema_filter(&value, &HashMap::new()).unwrap();
+
+        // Verify the schema was extracted correctly
+        assert_eq!(result.get("type").unwrap().as_str().unwrap(), "object");
+        assert!(result.get("properties").is_some());
+    }
+
+    #[test]
+    fn test_get_response_schema_with_fallback() {
+        // Create a mock response object without application/json
+        let response = json!({
+            "content": {
+                "text/plain": {
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            }
+        });
+
+        let value = to_value(&response).unwrap();
+        let result = get_response_schema_filter(&value, &HashMap::new()).unwrap();
+
+        // Verify the schema from the fallback media type was extracted
+        assert_eq!(result.get("type").unwrap().as_str().unwrap(), "string");
+    }
+
+    #[test]
+    fn test_get_response_schema_prefers_application_json() {
+        // Create a mock response object with multiple media types
+        let response = json!({
+            "content": {
+                "text/plain": {
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                "application/json": {
+                    "schema": {
+                        "type": "object"
+                    }
+                }
+            }
+        });
+
+        let value = to_value(&response).unwrap();
+        let result = get_response_schema_filter(&value, &HashMap::new()).unwrap();
+
+        // Verify application/json was preferred
+        assert_eq!(result.get("type").unwrap().as_str().unwrap(), "object");
+    }
+
+    #[test]
+    fn test_get_response_schema_missing_content() {
+        // Create a mock response object without content field
+        let response = json!({
+            "description": "A response without content"
+        });
+
+        let value = to_value(&response).unwrap();
+        let result = get_response_schema_filter(&value, &HashMap::new());
+
+        // Verify error message
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("missing 'content' field"));
+    }
+
+    #[test]
+    fn test_get_response_schema_missing_schema() {
+        // Create a mock response object with content but no schema
+        let response = json!({
+            "content": {
+                "application/json": {
+                    "example": "some example"
+                }
+            }
+        });
+
+        let value = to_value(&response).unwrap();
+        let result = get_response_schema_filter(&value, &HashMap::new());
+
+        // Verify error message
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("Could not find a valid schema object"));
+    }
+
+    #[test]
+    fn test_get_response_schema_invalid_input() {
+        // Test with non-object input
+        let value = to_value("not an object").unwrap();
+        let result = get_response_schema_filter(&value, &HashMap::new());
+
+        // Verify error message
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("must be a valid response object"));
+    }
 }
