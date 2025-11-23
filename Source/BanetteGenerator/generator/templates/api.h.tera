@@ -40,10 +40,12 @@ class {%- if module_name %} {{ module_name }} {% else %} {% endif -%}{{ file_nam
 public:
 {% for path, path_item in paths -%}
     // === PATH: {{ path }} ===
+    // Note: Path parameters (e.g., {id}, {user_id}) are converted to PascalCase in function names
     {% for method, operation in path_item %}
     /**
      * Summary: {{ operation.summary | default(value='No summary provided.') }}
      * Endpoint: {{ method | upper }} {{ path }}
+     * Function: {{ path | path_to_func_name(method=method) }}
      */
     UFUNCTION(BlueprintCallable, Category = "API|{{ operation.tags }}", meta=(Latent, LatentInfo = LatentInfo) )
     static FVoidCoroutine {{ path | path_to_func_name(method=method) }}(
