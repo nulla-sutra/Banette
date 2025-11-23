@@ -235,10 +235,10 @@ pub fn get_request_body_schema_filter(
 /// Tera filter to extract the schema from an OpenAPI response object.
 ///
 /// The filter attempts to extract the schema in the following order:
-/// 1. First, it looks for "application/json" media type
+/// 1. First, it looks for the "application/json" media type
 /// 2. If not found, it falls back to the first available media type
 ///
-/// Usage in template: {{ response | get_response_schema }}
+/// Usage in the template: {{ response | get_response_schema }}
 pub fn get_response_schema_filter(value: &Value, _args: &HashMap<String, Value>) -> Result<Value> {
     // 1. Check that the input is an object
     let response = value.as_object().ok_or_else(|| {
@@ -349,7 +349,7 @@ mod tests {
 
     #[test]
     fn test_get_response_schema_missing_content() {
-        // Create a mock response object without content field
+        // Create a mock response object without a content field
         let response = json!({
             "description": "A response without content"
         });
@@ -394,12 +394,6 @@ mod tests {
         let error_msg = result.unwrap_err().to_string();
         assert!(error_msg.contains("must be a valid response object"));
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use serde_json::json;
 
     /// Helper function to create args for path_to_func_name_filter
     fn create_method_args(method: &str) -> HashMap<String, Value> {
@@ -569,7 +563,7 @@ mod tests {
 
     #[test]
     fn test_convert_to_pascal_case_empty_string() {
-        // Test that empty string returns empty string
+        // Test that an empty string returns empty string
         assert_eq!(convert_to_pascal_case(""), "");
     }
 
