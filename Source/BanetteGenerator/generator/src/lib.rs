@@ -1,7 +1,7 @@
 mod openapi;
 
 use crate::openapi::filter::{
-    get_body_schema_filter, is_required_filter, path_to_func_name_filter, to_ue_type_filter,
+    get_request_body_schema_filter, is_required_filter, path_to_func_name_filter, to_ue_type_filter,
 };
 use crate::openapi::loader::load_openapi_spec;
 use anyhow::anyhow;
@@ -20,20 +20,20 @@ pub extern "C" fn generate(
     module_name: *const c_char,
 ) {
     let result = (|| -> anyhow::Result<()> {
-        let convert_arg = |ptr: *const c_char| -> anyhow::Result<&str> {
+        let convert_arg = |ptr: *const c_char, param_name: &str| -> anyhow::Result<&str> {
             if ptr.is_null() {
                 anyhow::bail!("Argument cannot be null (received NULL pointer)",);
             }
             // SAFETY: CStr::from_ptr is safe because we check for null.
             unsafe { CStr::from_ptr(ptr) }
                 .to_str()
-                .map_err(|e| anyhow!("Argument contains invalid UTF-8: {}", e))
+                .map_err(|e| anyhow!("Argument {} contains invalid UTF-8: {}", param_name, e))
         };
 
-        let openapi_path = convert_arg(openapi_path)?;
-        let output_dir = convert_arg(output_dir)?;
-        let file_name = convert_arg(file_name)?;
-        let module_name = convert_arg(module_name)?;
+        let openapi_path = convert_arg(openapi_path, "openapi_path")?;
+        let output_dir = convert_arg(output_dir, "output_dir")?;
+        let file_name = convert_arg(file_name, "file_name")?;
+        let module_name = convert_arg(module_name, "module_name")?;
 
         generate_safe(openapi_path, output_dir, file_name, module_name)
     })();
@@ -67,7 +67,7 @@ fn generate_safe(
     tera.register_filter("to_ue_type", to_ue_type_filter);
     tera.register_filter("is_required", is_required_filter);
     tera.register_filter("path_to_func_name", path_to_func_name_filter);
-    tera.register_filter("get_body_schema", get_body_schema_filter);
+    tera.register_filter("get_request_body_schema", get_request_body_schema_filter);
 
     tera.add_template_file("templates/api.h.tera", Some("open_api_template"))?;
 

@@ -3,7 +3,7 @@ use tera::{Result, Value, to_value};
 
 pub(crate) fn to_ue_type_filter(value: &Value, _args: &HashMap<String, Value>) -> Result<Value> {
     fn get_cpp_type(schema: &Value) -> String {
-        // 1. 处理布尔值 Schema (true/false)
+        // 1. Handle boolean Schema (true/false)
         if let Some(is_any) = schema.as_bool() {
             return if is_any {
                 "FInstancedStruct".to_string() // Any type
@@ -12,14 +12,14 @@ pub(crate) fn to_ue_type_filter(value: &Value, _args: &HashMap<String, Value>) -
             };
         }
 
-        // 2. 处理 $ref 引用
-        // 如果存在 $ref，直接返回对应的结构体名称，不需要继续递归
+        // 2. Handle $ref references
+        // If $ref exists, return the corresponding struct name directly; no need to recurse further
         if let Some(ref_path) = schema.get("$ref").and_then(|v| v.as_str()) {
             let struct_name = ref_path.split('/').last().unwrap_or("Unknown");
             return format!("F{}", struct_name);
         }
 
-        // 3. 获取类型字符串
+        // 3. Get the type string
         let type_str = schema
             .get("type")
             .and_then(|t| t.as_str())
@@ -28,7 +28,7 @@ pub(crate) fn to_ue_type_filter(value: &Value, _args: &HashMap<String, Value>) -
         match type_str {
             "string" => "FString".to_string(),
             "integer" => {
-                // 可选：检查 format 区分 int32/int64
+                // Optional: check 'format' to distinguish int32/int64
                 let format = schema.get("format").and_then(|f| f.as_str());
                 match format {
                     Some("int64") => "int64".to_string(),
@@ -38,18 +38,18 @@ pub(crate) fn to_ue_type_filter(value: &Value, _args: &HashMap<String, Value>) -
             "number" => "float".to_string(),
             "boolean" => "bool".to_string(),
             "array" => {
-                // === 递归重点 ===
-                // 获取 items 字段
+                // === Recursion key point ===
+                // Get the 'items' field
                 if let Some(items) = schema.get("items") {
-                    // 递归调用自己来获取内部类型
+                    // Recursively call itself to get the inner type
                     let inner_type = get_cpp_type(items);
                     format!("TArray<{}>", inner_type)
                 } else {
-                    // 如果是数组但没有 items 定义，假定为任意类型数组
+                    // If it's an array without 'items' defined, assume an array of any type
                     "TArray<FInstancedStruct>".to_string()
                 }
             }
-            // object 或其他情况
+            // object or other cases
             _ => "FInstancedStruct".to_string(),
         }
     }
@@ -62,12 +62,12 @@ pub(crate) fn to_ue_type_filter(value: &Value, _args: &HashMap<String, Value>) -
 ///
 /// Usage in the template: {{ prop_name | is_required(required_list=schema.required) }}
 pub(crate) fn is_required_filter(value: &Value, args: &HashMap<String, Value>) -> Result<Value> {
-    // 1. 获取要检查的属性名称 (prop_name)
+    // 1. Get the property name to check (prop_name)
     let prop_name = value.as_str().ok_or_else(|| {
         tera::Error::msg("is_required filter expects property name as input string.")
     })?;
 
-    // 2. 获取作为参数传入的 'required_list' 数组
+    // 2. Get the 'required_list' array passed as an argument
     let required_list = args
         .get("required_list")
         .and_then(|v| v.as_array())
@@ -77,17 +77,17 @@ pub(crate) fn is_required_filter(value: &Value, args: &HashMap<String, Value>) -
             )
         })?;
 
-    // 3. 在数组中查找属性名称
+    // 3. Look up the property name in the array
     let is_required = required_list.iter().any(|v| v.as_str() == Some(prop_name));
 
-    // 4. 返回布尔值
-    tera::to_value(is_required)
+    // 4. Return a boolean value
+    to_value(is_required)
         .map_err(|e| tera::Error::msg(format!("Failed to convert bool to Value: {}", e)))
 }
 
-/// 将 OpenAPI 路径转换为 PascalCase 函数名，并追加 HTTP 方法。
+/// Convert an OpenAPI path to a PascalCase function name and append the HTTP method.
 ///
-/// 示例: /v1/player/characters, method="get" -> V1PlayerCharacters_GET
+/// Example: /v1/player/characters, method="get" -> V1PlayerCharacters_GET
 pub(crate) fn path_to_func_name_filter(
     value: &Value,
     args: &HashMap<String, Value>,
@@ -96,17 +96,17 @@ pub(crate) fn path_to_func_name_filter(
         .as_str()
         .ok_or_else(|| tera::Error::msg("Path must be a string"))?;
 
-    // 1. 获取并大写 HTTP 方法 (GET, POST, etc.)
+    // 1. Get and uppercase the HTTP method (GET, POST, etc.)
     let method = args
         .get("method")
         .and_then(|v| v.as_str())
         .ok_or_else(|| tera::Error::msg("path_to_func_name requires a 'method' argument"))?
         .to_uppercase();
 
-    // 2. 移除开头的斜杠
+    // 2. Remove the leading slash
     let cleaned_path = path.trim_start_matches('/');
 
-    // 3. 分割并应用 PascalCase 转换
+    // 3. Split and apply PascalCase transformation
     let parts: Vec<&str> = cleaned_path.split('/').collect();
     let mut func_base_name = String::new();
 
@@ -124,24 +124,27 @@ pub(crate) fn path_to_func_name_filter(
         }
     }
 
-    // 4. 合并函数名和方法
+    // 4. Combine the function name and the method
     let final_name = format!("{}_{}", func_base_name, method);
 
     Ok(to_value(final_name)?)
 }
 
-pub fn get_body_schema_filter(value: &Value, _args: &HashMap<String, Value>) -> Result<Value> {
-    // 1. 检查输入是否为对象
+pub fn get_request_body_schema_filter(
+    value: &Value,
+    _args: &HashMap<String, Value>,
+) -> Result<Value> {
+    // 1. Check that the input is an object
     let req_body = value.as_object().ok_or_else(|| {
         tera::Error::msg("Input to get_body_schema must be a valid requestBody object.")
     })?;
 
-    // 2. 获取 "content" 字段
+    // 2. Get the "content" field
     let content = req_body
         .get("content")
         .ok_or_else(|| tera::Error::msg("requestBody object is missing 'content' field."))?;
 
-    // 3. 尝试找到 "application/json" 对应的 schema
+    // 3. Try to find the schema for "application/json"
     if let Some(schema_obj) = content
         .get("application/json")
         .and_then(|json_media_type| json_media_type.get("schema"))
@@ -149,7 +152,7 @@ pub fn get_body_schema_filter(value: &Value, _args: &HashMap<String, Value>) -> 
         return Ok(schema_obj.clone());
     }
 
-    // 4. 回退机制：如果没有 application/json，则尝试第一个可用的媒体类型
+    // 4. Fallback: if there is no application/json, try the first available media type
     if let Some(content_map) = content.as_object() {
         if let Some((_, media_type)) = content_map.iter().next() {
             if let Some(schema_obj) = media_type.get("schema") {
@@ -158,8 +161,12 @@ pub fn get_body_schema_filter(value: &Value, _args: &HashMap<String, Value>) -> 
         }
     }
 
-    // 5. 失败处理
+    // 5. Failure handling
     Err(tera::Error::msg(
         "Could not find a valid schema object within requestBody content (checked application/json and first available type).",
     ))
+}
+
+pub fn get_response_schema_filter(value: &Value, _args: &HashMap<String, Value>) -> Result<Value> {
+    todo!()
 }

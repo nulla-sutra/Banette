@@ -40,25 +40,22 @@ class {%- if module_name %} {{ module_name }} {% else %} {% endif -%}{{ file_nam
 public:
 {% for path, path_item in paths -%}
     // === PATH: {{ path }} ===
-    {% for method, operation in path_item -%}
-    
+    {% for method, operation in path_item %}
     /**
      * Summary: {{ operation.summary | default(value='No summary provided.') }}
      * Endpoint: {{ method | upper }} {{ path }}
      */
     UFUNCTION(BlueprintCallable, Category = "API|{{ operation.tags }}", meta=(Latent, LatentInfo = LatentInfo) )
     static FVoidCoroutine {{ path | path_to_func_name(method=method) }}(
-        {% for param in operation.parameters | default(value=[]) -%}
-            {% set param_schema = param.schema | default(value=false) %}
+        {%- for param in operation.parameters | default(value=[]) -%}
+            {%- set param_schema = param.schema | default(value=false) -%}
             {{ param_schema | to_ue_type }} {{ param.name }},
-        {% endfor -%}
+        {%- endfor -%}
         
-        {% if operation.requestBody -%}
-            {% set body_schema = operation.requestBody | get_body_schema %}
-            {% set body_type = body_schema | to_ue_type %}
-            // Request Body Type: {{ body_type }}
-            {{ body_type }}& Response,
-        {% endif %}
+        {%- if operation.requestBody -%}
+            {%- set body_type = operation.requestBody | get_request_body_schema | to_ue_type -%}
+            const {{ body_type }}& RequestBody,
+        {%- endif -%}
         
         FLatentActionInfo LatentInfo
     );
