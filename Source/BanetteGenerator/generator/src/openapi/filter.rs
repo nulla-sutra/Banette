@@ -136,13 +136,8 @@ pub(crate) fn path_to_func_name_filter(
             // Convert parameter name to PascalCase and add to parameters list
             parameters.push(convert_to_pascal_case(param_name));
         } else {
-            // Regular path segment - capitalize the first character
-            let mut chars = part.chars();
-            if let Some(first_char) = chars.next() {
-                let mut result = first_char.to_uppercase().to_string();
-                result.push_str(chars.as_str());
-                regular_segments.push(result);
-            }
+            // Regular path segment - convert to PascalCase for consistency
+            regular_segments.push(convert_to_pascal_case(part));
         }
     }
 
