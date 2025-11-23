@@ -1,0 +1,68 @@
+#pragma once
+
+#include "CoreMinimal.h"
+#include "StructUtils/InstancedStruct.h"
+#include "UE5Coro.h"
+#include "{{ file_name }}.generated.h"
+
+/**
+ * Generated from OpenAPI Spec
+ * Version: {{ info.version }}
+ * Title: {{ info.title }}
+ */
+ 
+{% for name, schema in components.schemas %}
+/**
+ * USTRUCT: F{{ name }}
+ * Description: {{ schema.description | default(value="Auto-generated data structure.") }}
+ */
+USTRUCT(BlueprintType)
+struct {%- if module_name %} {{ module_name }} {% else %} {% endif -%}F{{ name }}
+{
+    GENERATED_BODY()
+    
+
+{%- if schema.properties -%}
+{% for prop_name, prop_schema in schema.properties %}
+    // {{ prop_name }} (Required: {{ prop_name | is_required(required_list=schema.required | default(value=[])) }})
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    {{ prop_schema | to_ue_type }} {{ prop_name }};
+{%- endfor -%}
+{% endif %}
+};
+{% endfor %}
+
+UCLASS()
+class {%- if module_name %} {{ module_name }} {% else %} {% endif -%}{{ file_name }}Library : public UBlueprintFunctionLibrary
+{
+    GENERATED_BODY()
+
+public:
+{% for path, path_item in paths -%}
+    // === PATH: {{ path }} ===
+    {% for method, operation in path_item -%}
+    
+    /**
+     * Summary: {{ operation.summary | default(value='No summary provided.') }}
+     * Endpoint: {{ method | upper }} {{ path }}
+     */
+    UFUNCTION(BlueprintCallable, Category = "API|{{ operation.tags }}", meta=(Latent, LatentInfo = LatentInfo) )
+    static FVoidCoroutine {{ path | path_to_func_name(method=method) }}(
+        {% for param in operation.parameters | default(value=[]) -%}
+            {% set param_schema = param.schema | default(value=false) %}
+            {{ param_schema | to_ue_type }} {{ param.name }},
+        {% endfor -%}
+        
+        {% if operation.requestBody -%}
+            {% set body_schema = operation.requestBody | get_body_schema %}
+            {% set body_type = body_schema | to_ue_type %}
+            // Request Body Type: {{ body_type }}
+            {{ body_type }}& Response,
+        {% endif %}
+        
+        FLatentActionInfo LatentInfo
+    );
+    {% endfor -%}
+{% endfor -%}
+};
+

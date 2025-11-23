@@ -1,44 +1,102 @@
-use oas3::{Spec, from_json};
-use std::ffi::c_char;
+mod openapi;
+
+use crate::openapi::filter::{
+    get_body_schema_filter, is_required_filter, path_to_func_name_filter, to_ue_type_filter,
+};
+use crate::openapi::loader::load_openapi_spec;
+use anyhow::anyhow;
+use std::ffi::{CStr, c_char};
+use std::fs;
+use std::fs::File;
+use std::io::Write;
+use std::path::Path;
+use tera::Tera;
 
 #[unsafe(no_mangle)]
-pub extern "C" fn generate(openapi_path: *const c_char, output_dir: *const c_char) {}
+pub extern "C" fn generate(
+    openapi_path: *const c_char,
+    output_dir: *const c_char,
+    file_name: *const c_char,
+    module_name: *const c_char,
+) {
+    let result = (|| -> anyhow::Result<()> {
+        let convert_arg = |ptr: *const c_char| -> anyhow::Result<&str> {
+            if ptr.is_null() {
+                anyhow::bail!("Argument cannot be null (received NULL pointer)",);
+            }
+            // SAFETY: CStr::from_ptr is safe because we check for null.
+            unsafe { CStr::from_ptr(ptr) }
+                .to_str()
+                .map_err(|e| anyhow!("Argument contains invalid UTF-8: {}", e))
+        };
 
+        let openapi_path = convert_arg(openapi_path)?;
+        let output_dir = convert_arg(output_dir)?;
+        let file_name = convert_arg(file_name)?;
+        let module_name = convert_arg(module_name)?;
 
-fn load_openapi_spec(path: &str) -> Result<Spec, String> {
-    // url
-    let spec_str = if path.starts_with("http://") || path.starts_with("https://") {
-        ureq::get(path)
-            .call()
-            .map_err(|e| format!("Cannot fetch OpenAPI spec: {e}"))?
-            .into_body()
-            .read_to_string()
-            .map_err(|e| format!("Cannot read HTTP body: {e}"))?
+        generate_safe(openapi_path, output_dir, file_name, module_name)
+    })();
+
+    if let Err(e) = result {
+        eprintln!("[Rust] Generation failed: {}", e);
+    } else {
+        println!("[Rust] Code generation completed successfully.");
     }
-    // local file
-    else {
-        std::fs::read_to_string(path).map_err(|e| format!("Cannot read file `{path}`: {e}"))?
-    };
+}
 
-    let v: serde_json::Value = serde_json::from_str(&spec_str)
-        .map_err(|e| format!("Cannot parse OpenAPI spec `{path}`: {e}"))?;
+fn generate_safe(
+    path: &str,
+    output_dir: &str,
+    file_name: &str,
+    module_name: &str,
+) -> anyhow::Result<()> {
+    let spec = load_openapi_spec(path)?;
+    let mut tera = Tera::default();
 
-    let pretty_str = serde_json::to_string_pretty(&v).map_err(|e| e.to_string())?;
+    let out_path = Path::new(output_dir);
 
-    // println!("{}", pretty_str);
+    if !out_path.exists() {
+        fs::create_dir_all(out_path)?;
+    }
 
-    // Cannot compile currently due to https://github.com/x52dev/oas3-rs/issues/278
-    from_json(&pretty_str).map_err(|e| format!("Cannot parse OpenAPI spec `{path}`: {e}"))
+    let file_path = out_path.join(file_name);
+
+    let file_name_base = file_path.file_stem().unwrap_or_default().to_string_lossy();
+
+    tera.register_filter("to_ue_type", to_ue_type_filter);
+    tera.register_filter("is_required", is_required_filter);
+    tera.register_filter("path_to_func_name", path_to_func_name_filter);
+    tera.register_filter("get_body_schema", get_body_schema_filter);
+
+    tera.add_template_file("templates/api.h.tera", Some("open_api_template"))?;
+
+    let mut context = tera::Context::from_serialize(&spec)?;
+    context.insert("module_name", &module_name);
+    context.insert("file_name", &file_name_base);
+
+    let rendered = tera.render("open_api_template", &context)?;
+
+    let mut file = File::create(&file_path)?;
+
+    file.write_all(rendered.as_bytes())?;
+
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    //noinspection ALL
     #[test]
-    fn test_load_openapi_spec() -> Result<(), String> {
-        let spec = load_openapi_spec("http://127.0.0.1:10802/docs/api.json")?;
-        assert!(spec.info.title.len() > 0);
-        Ok(())
+    fn test_generate() {
+        generate_safe(
+            "http://127.0.0.1:10802/docs/api.json",
+            "./target/test",
+            "AnxApi.h",
+            "ANXNET_API",
+        )
+        .unwrap();
     }
 }
