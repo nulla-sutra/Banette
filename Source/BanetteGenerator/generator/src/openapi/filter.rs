@@ -90,7 +90,7 @@ pub(crate) fn is_required_filter(value: &Value, args: &HashMap<String, Value>) -
 
 /// Convert an OpenAPI path to a PascalCase function name with the HTTP method prefix.
 ///
-/// Handles path parameters (enclosed in `{}`) by converting them to PascalCase and grouping them with "By_" prefix.
+/// Handles path parameters (enclosed in `{}`) by converting them to PascalCase and grouping them with the "By_" prefix.
 ///
 /// Examples:
 /// - `/v1/player/characters`, method="get" -> `GET_V1_Player_Characters`
@@ -136,7 +136,7 @@ pub(crate) fn path_to_func_name_filter(
                 continue;
             }
 
-            // Convert parameter name to PascalCase and add to parameters list
+            // Convert parameter name to PascalCase and add to a parameter list
             parameters.push(convert_to_pascal_case(param_name));
         } else {
             // Regular path segment - convert to PascalCase for consistency
@@ -146,14 +146,14 @@ pub(crate) fn path_to_func_name_filter(
 
     // 4. Build the function name: METHOD_Segments_By_Parameters
     let mut func_name = method.clone();
-    
+
     // Add regular segments separated by underscores
     if !regular_segments.is_empty() {
         func_name.push('_');
         func_name.push_str(&regular_segments.join("_"));
     }
-    
-    // Add parameters with "By_" prefix
+
+    // Add parameters with the "By_" prefix
     if !parameters.is_empty() {
         func_name.push_str("_By_");
         // All parameters: By_Param1_Param2_Param3
@@ -203,10 +203,7 @@ fn convert_to_pascal_case(input: &str) -> String {
     result
 }
 
-pub fn request_body_schema_filter(
-    value: &Value,
-    _args: &HashMap<String, Value>,
-) -> Result<Value> {
+pub fn request_body_schema_filter(value: &Value, _args: &HashMap<String, Value>) -> Result<Value> {
     // 1. Check that the input is an object
     let req_body = value.as_object().ok_or_else(|| {
         tera::Error::msg("Input to get_body_schema must be a valid requestBody object.")
@@ -243,21 +240,21 @@ pub fn request_body_schema_filter(
 /// Tera filter to extract the schema from an OpenAPI responses object.
 ///
 /// This filter handles the OpenAPI `responses` structure which contains status codes
-/// as keys (e.g., "200", "201", "404"). It attempts to extract the schema in the 
+/// as keys (e.g., "200", "201", "404"). It attempts to extract the schema in the
 /// following order:
 /// 1. Looks for successful response status codes (200, 201, 202, 203, 204)
 /// 2. Falls back to the first available response
 /// 3. From the selected response, extracts schema preferring "application/json"
-/// 4. If not found, uses the first available media type
+/// 4. If not found, use the first available media type
 ///
 /// Usage in the template: {{ operation.responses | response_body_schema | to_ue_type }}
 pub fn response_body_schema_filter(value: &Value, _args: &HashMap<String, Value>) -> Result<Value> {
-    // 1. Check that the input is an object (responses object)
+    // 1. Check that the input is an object (response object)
     let responses = value.as_object().ok_or_else(|| {
         tera::Error::msg("Input to response_body_schema must be a valid responses object.")
     })?;
 
-    // 2. Try to find a successful response, or use the first available one
+    // 2. Try to find a successful response or use the first available one
     let response = SUCCESS_STATUS_CODES
         .iter()
         .find_map(|code| responses.get(*code))
@@ -298,7 +295,7 @@ mod tests {
 
     #[test]
     fn test_response_body_schema_with_200_status() {
-        // Create a mock responses object with 200 status code
+        // Create a mock responses object with "200" status code
         let responses = json!({
             "200": {
                 "description": "Successful response",
@@ -350,7 +347,13 @@ mod tests {
         assert_eq!(result.get("type").unwrap().as_str().unwrap(), "array");
         assert!(result.get("items").is_some());
         assert_eq!(
-            result.get("items").unwrap().get("$ref").unwrap().as_str().unwrap(),
+            result
+                .get("items")
+                .unwrap()
+                .get("$ref")
+                .unwrap()
+                .as_str()
+                .unwrap(),
             "#/components/schemas/CharacterResponse"
         );
     }
@@ -442,7 +445,7 @@ mod tests {
 
     #[test]
     fn test_response_body_schema_with_text_plain_fallback() {
-        // Test with non-JSON content type
+        // Test with a non-JSON content type
         let responses = json!({
             "200": {
                 "description": "Success",
@@ -805,7 +808,7 @@ mod tests {
 
         // Step 2: Convert schema to UE type
         let ue_type = to_ue_type_filter(&schema, &HashMap::new()).unwrap();
-        
+
         // Verify the final UE type is correct: TArray<FCharacterResponse>
         assert_eq!(ue_type.as_str().unwrap(), "TArray<FCharacterResponse>");
     }
@@ -829,7 +832,7 @@ mod tests {
         let responses_value = to_value(&responses).unwrap();
         let schema = response_body_schema_filter(&responses_value, &HashMap::new()).unwrap();
         let ue_type = to_ue_type_filter(&schema, &HashMap::new()).unwrap();
-        
+
         assert_eq!(ue_type.as_str().unwrap(), "FUser");
     }
 
@@ -852,7 +855,7 @@ mod tests {
         let responses_value = to_value(&responses).unwrap();
         let schema = response_body_schema_filter(&responses_value, &HashMap::new()).unwrap();
         let ue_type = to_ue_type_filter(&schema, &HashMap::new()).unwrap();
-        
+
         assert_eq!(ue_type.as_str().unwrap(), "FString");
     }
 }
