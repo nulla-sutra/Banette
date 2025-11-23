@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 use tera::{Result, Value, to_value};
 
+/// Successful HTTP status codes to prioritize when extracting response schemas
+const SUCCESS_STATUS_CODES: &[&str] = &["200", "201", "202", "203", "204"];
+
 pub(crate) fn to_ue_type_filter(value: &Value, _args: &HashMap<String, Value>) -> Result<Value> {
     fn get_cpp_type(schema: &Value) -> String {
         // 1. Handle boolean Schema (true/false)
@@ -254,11 +257,8 @@ pub fn response_body_schema_filter(value: &Value, _args: &HashMap<String, Value>
         tera::Error::msg("Input to response_body_schema must be a valid responses object.")
     })?;
 
-    // 2. Define successful status codes to look for (in priority order)
-    let success_codes = ["200", "201", "202", "203", "204"];
-    
-    // 3. Try to find a successful response, or use the first available one
-    let response = success_codes
+    // 2. Try to find a successful response, or use the first available one
+    let response = SUCCESS_STATUS_CODES
         .iter()
         .find_map(|code| responses.get(*code))
         .or_else(|| responses.values().next())
@@ -287,7 +287,7 @@ pub fn response_body_schema_filter(value: &Value, _args: &HashMap<String, Value>
 
     // 7. Failure handling
     Err(tera::Error::msg(
-        "Could not find a valid schema object within response content (checked application/json and first available type).",
+        "Could not find a valid schema object within responses content (checked application/json and first available type).",
     ))
 }
 
