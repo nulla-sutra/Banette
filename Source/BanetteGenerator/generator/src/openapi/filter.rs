@@ -200,7 +200,7 @@ fn convert_to_pascal_case(input: &str) -> String {
     result
 }
 
-pub fn get_request_body_schema_filter(
+pub fn request_body_schema_filter(
     value: &Value,
     _args: &HashMap<String, Value>,
 ) -> Result<Value> {
@@ -244,7 +244,7 @@ pub fn get_request_body_schema_filter(
 /// 2. If not found, it falls back to the first available media type
 ///
 /// Usage in the template: {{ response | get_response_schema }}
-pub fn get_response_schema_filter(value: &Value, _args: &HashMap<String, Value>) -> Result<Value> {
+pub fn response_body_schema_filter(value: &Value, _args: &HashMap<String, Value>) -> Result<Value> {
     // 1. Check that the input is an object
     let response = value.as_object().ok_or_else(|| {
         tera::Error::msg("Input to get_response_schema must be a valid response object.")
@@ -300,7 +300,7 @@ mod tests {
         });
 
         let value = to_value(&response).unwrap();
-        let result = get_response_schema_filter(&value, &HashMap::new()).unwrap();
+        let result = response_body_schema_filter(&value, &HashMap::new()).unwrap();
 
         // Verify the schema was extracted correctly
         assert_eq!(result.get("type").unwrap().as_str().unwrap(), "object");
@@ -321,7 +321,7 @@ mod tests {
         });
 
         let value = to_value(&response).unwrap();
-        let result = get_response_schema_filter(&value, &HashMap::new()).unwrap();
+        let result = response_body_schema_filter(&value, &HashMap::new()).unwrap();
 
         // Verify the schema from the fallback media type was extracted
         assert_eq!(result.get("type").unwrap().as_str().unwrap(), "string");
@@ -346,7 +346,7 @@ mod tests {
         });
 
         let value = to_value(&response).unwrap();
-        let result = get_response_schema_filter(&value, &HashMap::new()).unwrap();
+        let result = response_body_schema_filter(&value, &HashMap::new()).unwrap();
 
         // Verify application/json was preferred
         assert_eq!(result.get("type").unwrap().as_str().unwrap(), "object");
@@ -360,7 +360,7 @@ mod tests {
         });
 
         let value = to_value(&response).unwrap();
-        let result = get_response_schema_filter(&value, &HashMap::new());
+        let result = response_body_schema_filter(&value, &HashMap::new());
 
         // Verify error message
         assert!(result.is_err());
@@ -380,7 +380,7 @@ mod tests {
         });
 
         let value = to_value(&response).unwrap();
-        let result = get_response_schema_filter(&value, &HashMap::new());
+        let result = response_body_schema_filter(&value, &HashMap::new());
 
         // Verify error message
         assert!(result.is_err());
@@ -392,7 +392,7 @@ mod tests {
     fn test_get_response_schema_invalid_input() {
         // Test with non-object input
         let value = to_value("not an object").unwrap();
-        let result = get_response_schema_filter(&value, &HashMap::new());
+        let result = response_body_schema_filter(&value, &HashMap::new());
 
         // Verify error message
         assert!(result.is_err());

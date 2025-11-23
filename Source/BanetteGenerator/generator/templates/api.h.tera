@@ -55,8 +55,13 @@ public:
         {%- endfor -%}
         
         {%- if operation.requestBody -%}
-            {%- set body_type = operation.requestBody | get_request_body_schema | to_ue_type -%}
+            {%- set body_type = operation.requestBody | request_body_schema | to_ue_type -%}
             const {{ body_type }}& RequestBody,
+        {%- endif -%}
+        
+        {%- if operation.responses -%}
+            {%- set body_type = operation.responses | request_body_schema | to_ue_type -%}
+            const {{ body_type }}& ResponseBody,
         {%- endif -%}
         
         FLatentActionInfo LatentInfo
