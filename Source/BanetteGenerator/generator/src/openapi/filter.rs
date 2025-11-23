@@ -125,6 +125,13 @@ pub(crate) fn path_to_func_name_filter(
         let processed_part = if part.starts_with('{') && part.ends_with('}') {
             // Remove the braces
             let param_name = &part[1..part.len() - 1];
+
+            // Validate that the parameter name is not empty
+            if param_name.is_empty() {
+                // Skip empty parameters like {}
+                continue;
+            }
+
             // Convert parameter name to PascalCase
             convert_to_pascal_case(param_name)
         } else {
@@ -151,6 +158,7 @@ pub(crate) fn path_to_func_name_filter(
 /// Convert a string to PascalCase.
 ///
 /// Handles underscores, hyphens, and camelCase/snake_case inputs.
+/// Returns an empty string if input is empty.
 ///
 /// Examples:
 /// - `id` -> `Id`
@@ -158,6 +166,11 @@ pub(crate) fn path_to_func_name_filter(
 /// - `resource-name` -> `ResourceName`
 /// - `userId` -> `UserId`
 fn convert_to_pascal_case(input: &str) -> String {
+    // Handle empty input
+    if input.is_empty() {
+        return String::new();
+    }
+
     let mut result = String::new();
     let mut capitalize_next = true;
 
@@ -380,5 +393,30 @@ mod tests {
                 .to_string()
                 .contains("Path must be a string")
         );
+    }
+
+    #[test]
+    fn test_path_to_func_name_empty_braces() {
+        // Test that empty braces {} are handled gracefully
+        let path = json!("/api/{}/resource");
+        let args = create_method_args("get");
+
+        let result = path_to_func_name_filter(&path, &args).unwrap();
+        // Empty braces should be skipped
+        assert_eq!(result.as_str().unwrap(), "ApiResource_GET");
+    }
+
+    #[test]
+    fn test_convert_to_pascal_case_empty_string() {
+        // Test that empty string returns empty string
+        assert_eq!(convert_to_pascal_case(""), "");
+    }
+
+    #[test]
+    fn test_convert_to_pascal_case_only_separators() {
+        // Test strings with only separators
+        assert_eq!(convert_to_pascal_case("___"), "");
+        assert_eq!(convert_to_pascal_case("---"), "");
+        assert_eq!(convert_to_pascal_case("_-_"), "");
     }
 }
