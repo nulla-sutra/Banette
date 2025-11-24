@@ -46,7 +46,7 @@ public:
      * Endpoint: {{ method | upper }} {{ path }}
      * Function: {{ path | path_to_func_name(method=method) }}
      */
-    UFUNCTION(BlueprintCallable, Category = "API|{{ operation.tags }}", meta=(Latent, LatentInfo = LatentInfo) )
+    UFUNCTION(BlueprintCallable, Category = "API|{{ operation.tags | tags_to_pipe_separated }}", meta=(Latent, LatentInfo = LatentInfo) )
     static FVoidCoroutine {{ path | path_to_func_name(method=method) }}(
         {%- for param in operation.parameters | default(value=[]) -%}
             {%- set param_schema = param.schema | default(value=false) -%}

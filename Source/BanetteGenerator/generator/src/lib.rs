@@ -2,7 +2,7 @@ mod openapi;
 
 use crate::openapi::filter::{
     is_required_filter, path_to_func_name_filter, request_body_schema_filter,
-    response_body_schema_filter, to_ue_type_filter,
+    response_body_schema_filter, tags_to_pipe_separated_filter, to_ue_type_filter,
 };
 use crate::openapi::loader::load_openapi_spec;
 use anyhow::anyhow;
@@ -70,6 +70,7 @@ pub fn generate_safe(
     tera.register_filter("path_to_func_name", path_to_func_name_filter);
     tera.register_filter("request_body_schema", request_body_schema_filter);
     tera.register_filter("response_body_schema", response_body_schema_filter);
+    tera.register_filter("tags_to_pipe_separated", tags_to_pipe_separated_filter);
 
     let template_path = format!("{}/templates/api.h.tera", env!("CARGO_MANIFEST_DIR"));
 
