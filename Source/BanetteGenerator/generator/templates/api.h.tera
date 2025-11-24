@@ -1,3 +1,4 @@
+// ReSharper disable CppUE4CodingStandardNamingViolationWarning
 #pragma once
 
 #include "CoreMinimal.h"
@@ -39,14 +40,13 @@ class {%- if module_name %} {{ module_name }} {% else %} {% endif -%}U{{ file_na
 
 public:
 {% for path, path_item in paths %}
-    // === PATH: {{ path }} ===
     {% for method, operation in path_item %}
     /**
      * Summary: {{ operation.summary | default(value='No summary provided.') }}
      * Endpoint: {{ method | upper }} {{ path }}
      * Function: {{ path | path_to_func_name(method=method) }}
      */
-    UFUNCTION(BlueprintCallable, Category = "API|{{ operation.tags | tags_to_pipe_separated }}", meta=(Latent, LatentInfo = LatentInfo) )
+    UFUNCTION(BlueprintCallable, Category = "API|{{ operation.tags | tags_to_pipe_separated }}", meta=(Latent, LatentInfo = LatentInfo))
     static FVoidCoroutine {{ path | path_to_func_name(method=method) }}(
         {%- for param in operation.parameters | default(value=[]) -%}
             {%- set param_schema = param.schema | default(value=false) -%}
@@ -61,9 +61,8 @@ public:
             {{ body_type }}& ResponseBody,
         {%- endif -%}
         
-        FLatentActionInfo LatentInfo){
-        
-        
+        FLatentActionInfo LatentInfo)
+    {
         co_return;
     };
     {%- endfor -%}
