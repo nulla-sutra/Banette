@@ -45,7 +45,7 @@ pub extern "C" fn generate(
     }
 }
 
-fn generate_safe(
+pub fn generate_safe(
     path: &str,
     output_dir: &str,
     file_name: &str,

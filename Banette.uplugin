@@ -1,50 +1,55 @@
 ﻿{
-	"FileVersion": 3,
-	"Version": 1,
-	"VersionName": "1.0",
-	"FriendlyName": "Banette",
-	"Description": "",
-	"Category": "Other",
-	"CreatedBy": "tarnishablec",
-	"CreatedByURL": "tarnishablec@outlook.com",
-	"DocsURL": "",
-	"MarketplaceURL": "",
-	"CanContainContent": true,
-	"IsBetaVersion": true,
-	"IsExperimentalVersion": false,
-	"Installed": false,
-	"Modules": [
-		{
-			"Name": "Banette",
-			"Type": "Runtime",
-			"LoadingPhase": "Default"
-		},
-		{
-			"Name": "BanetteTransport",
-			"Type": "Runtime",
-			"LoadingPhase": "Default"
-		},
-		{
-			"Name": "BanetteKit",
-			"Type": "Runtime",
-			"LoadingPhase": "Default"
-		},
-		{
-			"Name": "BanetteTest",
-			"Type": "UncookedOnly",
-			"LoadingPhase": "PostConfigInit"
-		},
-		{
-			"Name": "BanetteGenerator",
-			"Type": "Editor",
-			"LoadingPhase": "Default"
-		}
-	],
-	"Plugins": [
-		{
-			"Name": "UE5Coro",
-			"Enabled": true,
-			"Optional": false
-		}
-	]
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "1.0",
+  "FriendlyName": "Banette",
+  "Description": "",
+  "Category": "Other",
+  "CreatedBy": "tarnishablec",
+  "CreatedByURL": "tarnishablec@outlook.com",
+  "DocsURL": "",
+  "MarketplaceURL": "",
+  "CanContainContent": true,
+  "IsBetaVersion": true,
+  "IsExperimentalVersion": false,
+  "Installed": false,
+  "Modules": [
+    {
+      "Name": "Banette",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    },
+    {
+      "Name": "BanetteTransport",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    },
+    {
+      "Name": "BanetteKit",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    },
+    {
+      "Name": "BanetteTest",
+      "Type": "UncookedOnly",
+      "LoadingPhase": "PostConfigInit"
+    },
+    {
+      "Name": "BanetteGenerator",
+      "Type": "Editor",
+      "LoadingPhase": "Default"
+    }
+  ],
+  "Plugins": [
+    {
+      "Name": "UE5Coro",
+      "Enabled": true,
+      "Optional": false
+    }
+  ],
+  "PreBuildSteps": {
+    "Win64": [
+      "$(PluginDir)\\Source\\BanetteGenerator\\generator\\PreBuildSteps.bat"
+    ]
+  }
 }
