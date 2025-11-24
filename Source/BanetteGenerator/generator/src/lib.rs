@@ -46,6 +46,67 @@ pub extern "C" fn generate(
     }
 }
 
+/// Generates a safely rendered output file based on an OpenAPI specification and
+/// template, with the ability to customize the target filename and module name.
+///
+/// # Parameters
+/// - `path`: A string slice representing the file system path to the OpenAPI specification file.
+/// - `output_dir`: A string slice specifying the directory where the generated file should be saved.
+/// - `file_name`: The desired name for the generated file.
+/// - `module_name`: The module name to be used in the rendered output.
+///
+/// # Returns
+/// - `anyhow::Result<()>`: Returns `Ok(())` if the operation completes successfully, or an error
+///   wrapped in `anyhow::Result` if any step of the generation process fails.
+///
+/// # Behavior
+/// 1. Loads the OpenAPI specification from the file located at the provided `path`.
+/// 2. Initializes a Tera template engine instance for rendering templates.
+/// 3. Ensures the existence of the `output_dir`, creating the directory if it is missing.
+/// 4. Registers custom Tera filters that provide specific processing utilities during rendering:
+///    - `to_ue_type`: Converts to Unreal Engine type.
+///    - `is_required`: Determines if a field is required.
+///    - `path_to_func_name`: Converts a path to a function-friendly name.
+///    - `request_body_schema`: Extracts the request body schema.
+///    - `response_body_schema`: Extracts the response body schema.
+///    - `tags_to_pipe_separated`: Converts tags into a pipe-separated format.
+/// 5. Loads the OpenAPI template:
+///    - In debug mode, it reads the template file from the filesystem.
+///    - In release mode, it embeds the template as a raw string during compilation.
+/// 6. Creates a rendering context using the deserialized data from the OpenAPI spec and additional inputs:
+///    - Inserts `module_name` and `file_name` into the context for further customization in the template.
+/// 7. Uses the Tera engine to render the template into a file format.
+///
+/// # Side Effects
+/// - Writes a generated file to the specified `output_dir` under the provided `file_name`.
+///
+/// # Errors
+/// - Returns an error if:
+///   - The OpenAPI specification cannot be loaded.
+///   - The `output_dir` cannot be created or accessed.
+///   - The template file cannot be read or added.
+///   - The rendering process fails due to invalid data or template.
+///   - The output file cannot be written to disk.
+///
+/// # Example
+/// ```rust
+/// use anyhow::Result;
+///
+/// fn main() -> Result<()> {
+///     generate_safe(
+///         "path/to/openapi.yaml",
+///         "output/directory",
+///         "generated_file.h",
+///         "MyModule",
+///     )?;
+///     Ok(())
+/// }
+/// ```
+///
+/// In this example:
+/// - The function reads the OpenAPI spec from `path/to/openapi.yaml`.
+/// - Generates a file named `generated_file.h` in the `output/directory`.
+/// - Writes the rendered file using the specified `MyModule` name in the template.
 pub fn generate_safe(
     path: &str,
     output_dir: &str,
@@ -72,9 +133,19 @@ pub fn generate_safe(
     tera.register_filter("response_body_schema", response_body_schema_filter);
     tera.register_filter("tags_to_pipe_separated", tags_to_pipe_separated_filter);
 
-    let template_path = format!("{}/templates/api.h.tera", env!("CARGO_MANIFEST_DIR"));
+    #[cfg(debug_assertions)]
+    {
+        let template_path = concat!(env!("CARGO_MANIFEST_DIR"), "/templates/api.h.tera");
+        tera.add_template_file(template_path, Some("open_api_template"))?;
+    }
 
-    tera.add_template_file(template_path, Some("open_api_template"))?;
+    #[cfg(not(debug_assertions))]
+    {
+        tera.add_raw_template(
+            "open_api_template",
+            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/api.h.tera")),
+        )?;
+    }
 
     let mut context = tera::Context::from_serialize(&spec)?;
     context.insert("module_name", &module_name);

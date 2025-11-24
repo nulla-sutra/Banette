@@ -240,7 +240,7 @@ pub fn request_body_schema_filter(value: &Value, _args: &HashMap<String, Value>)
 /// Tera filter to transform an array of tags into a pipe-separated string.
 ///
 /// This filter takes an array of strings (tags) and joins them with a pipe (`|`) delimiter.
-/// For example: `["Character", "Inventory"]` becomes `"Character|Inventory"`.
+/// For example, `["Character", "Inventory"]` becomes `"Character|Inventory"`.
 ///
 /// Usage in the template: {{ operation.tags | tags_to_pipe_separated }}
 pub fn tags_to_pipe_separated_filter(
@@ -264,7 +264,7 @@ pub fn tags_to_pipe_separated_filter(
         tag_strings.push(tag_str);
     }
 
-    // 3. Join with pipe delimiter
+    // 3. Join with a pipe delimiter
     let result = tag_strings.join("|");
 
     // 4. Return as Value
@@ -948,7 +948,7 @@ mod tests {
 
     #[test]
     fn test_tags_to_pipe_separated_invalid_input_non_string_element() {
-        // Test with array containing non-string elements
+        // Test with an array containing non-string elements
         let tags = json!(["Character", 123, "Inventory"]);
         let value = to_value(&tags).unwrap();
         let result = tags_to_pipe_separated_filter(&value, &HashMap::new());

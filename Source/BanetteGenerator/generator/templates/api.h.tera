@@ -50,22 +50,23 @@ public:
     static FVoidCoroutine {{ path | path_to_func_name(method=method) }}(
         {%- for param in operation.parameters | default(value=[]) -%}
             {%- set param_schema = param.schema | default(value=false) -%}
-            {{ param_schema | to_ue_type }} {{ param.name }}, 
-        {%- endfor -%}
+            {{ param_schema | to_ue_type }} {{ param.name }}, {% endfor -%}
         
         {%- if operation.requestBody -%}
             {%- set body_type = operation.requestBody | request_body_schema | to_ue_type -%}
-            const {{ body_type }}& RequestBody,
-        {%- endif -%}
+            const {{ body_type }}& RequestBody, {% endif -%}
         
         {%- if operation.responses -%}
             {%- set body_type = operation.responses | response_body_schema | to_ue_type -%}
             {{ body_type }}& ResponseBody,
         {%- endif -%}
         
-        FLatentActionInfo LatentInfo
-    );
-    {% endfor -%}
-{% endfor -%}
+        FLatentActionInfo LatentInfo){
+        
+        
+        co_return;
+    };
+    {%- endfor -%}
+{% endfor %}
 };
 
