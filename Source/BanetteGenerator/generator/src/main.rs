@@ -13,7 +13,7 @@ struct Args {
     module_name: String,
 }
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
     generate_safe(
@@ -22,5 +22,4 @@ fn main() {
         args.file_name.as_str(),
         args.module_name.as_str(),
     )
-    .unwrap();
 }

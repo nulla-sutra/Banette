@@ -1,7 +1,8 @@
 mod openapi;
 
 use crate::openapi::filter::{
-    request_body_schema_filter, response_body_schema_filter, is_required_filter, path_to_func_name_filter, to_ue_type_filter,
+    is_required_filter, path_to_func_name_filter, request_body_schema_filter,
+    response_body_schema_filter, to_ue_type_filter,
 };
 use crate::openapi::loader::load_openapi_spec;
 use anyhow::anyhow;
@@ -70,7 +71,9 @@ pub fn generate_safe(
     tera.register_filter("request_body_schema", request_body_schema_filter);
     tera.register_filter("response_body_schema", response_body_schema_filter);
 
-    tera.add_template_file("templates/api.h.tera", Some("open_api_template"))?;
+    let template_path = format!("{}/templates/api.h.tera", env!("CARGO_MANIFEST_DIR"));
+
+    tera.add_template_file(template_path, Some("open_api_template"))?;
 
     let mut context = tera::Context::from_serialize(&spec)?;
     context.insert("module_name", &module_name);
