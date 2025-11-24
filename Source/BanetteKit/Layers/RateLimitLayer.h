@@ -32,6 +32,8 @@ namespace Banette::Kit
 		{
 		}
 
+		TRateLimitLayer() = default;
+
 		// Wrap is const because it only reads configuration and does not modify the layer itself
 		virtual TSharedRef<ServiceT> Wrap(TSharedRef<ServiceT> Inner) const override
 		{
@@ -77,7 +79,7 @@ namespace Banette::Kit
 				}
 
 				// Token acquired; proceed with the call
-				co_return InnerService->Call(Request);
+				co_return co_await InnerService->Call(Request);
 			}
 
 		private:
@@ -120,12 +122,12 @@ namespace Banette::Kit
 							CurrentTokens -= 1.0;
 							co_return; // Acquired successfully; exit
 						}
-						
+
 						// Compute the required wait time
 						const double Missing = 1.0 - CurrentTokens;
 						WaitTime = Missing / Config.TokensPerSecond;
 					}
-					
+
 					if (WaitTime > 0.0)
 					{
 						// Suspend the coroutine to wait

@@ -19,7 +19,8 @@ namespace Banette::Kit
 		static const TArray<uint8>& GetBytes(const ResponseT& Response)
 		{
 			unimplemented()
-			return {};
+			static const TArray<uint8> EmptyBytes;
+			return EmptyBytes;
 		}
 
 		static FString GetTypeKey(const ResponseT& Response)
