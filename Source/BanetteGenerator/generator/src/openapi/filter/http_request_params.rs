@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use tera::{Result, Value, to_value};
+use tera::{to_value, Result, Value};
 
 /// Tera filter to assemble FHttpRequest constructor parameters from a path-item.
 ///
@@ -10,7 +10,7 @@ use tera::{Result, Value, to_value};
 /// - Url: FString - The absolute URL to call
 /// - Method: EHttpMethod - The HTTP verb (Get, Post, Put, Delete, Patch, Head)
 ///
-/// Usage in template: {{ path | http_request_params(method=method) }}
+/// Usage in the template: {{ path | http_request_params(method=method) }}
 ///
 /// Examples:
 /// - `/v1/player/characters`, method="get" -> `TEXT("/v1/player/characters"), EHttpMethod::Get`
@@ -69,14 +69,8 @@ fn escape_cpp_string(s: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::openapi::filter::tests::create_method_args;
     use serde_json::json;
-
-    /// Helper function to create args for http_request_params_filter
-    fn create_method_args(method: &str) -> HashMap<String, Value> {
-        let mut args = HashMap::new();
-        args.insert("method".to_string(), to_value(method).unwrap());
-        args
-    }
 
     #[test]
     fn test_http_request_params_simple_get() {
@@ -203,7 +197,12 @@ mod tests {
 
         let result = http_request_params_filter(&path, &args);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Path must be a string"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Path must be a string")
+        );
     }
 
     #[test]
@@ -224,10 +223,7 @@ mod tests {
         let args = create_method_args("get");
 
         let result = http_request_params_filter(&path, &args).unwrap();
-        assert_eq!(
-            result.as_str().unwrap(),
-            "TEXT(\"/\"), EHttpMethod::Get"
-        );
+        assert_eq!(result.as_str().unwrap(), "TEXT(\"/\"), EHttpMethod::Get");
     }
 
     #[test]
@@ -236,10 +232,7 @@ mod tests {
         let args = create_method_args("get");
 
         let result = http_request_params_filter(&path, &args).unwrap();
-        assert_eq!(
-            result.as_str().unwrap(),
-            "TEXT(\"\"), EHttpMethod::Get"
-        );
+        assert_eq!(result.as_str().unwrap(), "TEXT(\"\"), EHttpMethod::Get");
     }
 
     #[test]
