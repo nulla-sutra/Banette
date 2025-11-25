@@ -1,5 +1,9 @@
+/*
+ * Copyright 2019-Present tarnishablec. All Rights Reserved.
+ */
+
 use anyhow::{Context, Result};
-use oas3::{Spec, from_json, from_yaml};
+use oas3::{from_json, from_yaml, Spec};
 use std::fs;
 
 /// Format of the OpenAPI specification file.

@@ -1,5 +1,9 @@
+/*
+ * Copyright 2019-Present tarnishablec. All Rights Reserved.
+ */
+
 use std::collections::HashMap;
-use tera::{Result, Value, to_value};
+use tera::{to_value, Result, Value};
 
 /// Convert an OpenAPI path to a PascalCase function name with the HTTP method prefix.
 ///
@@ -115,14 +119,8 @@ fn convert_to_pascal_case(input: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::openapi::filter::tests::create_method_args;
     use serde_json::json;
-
-    /// Helper function to create args for path_to_func_name_filter
-    fn create_method_args(method: &str) -> HashMap<String, Value> {
-        let mut args = HashMap::new();
-        args.insert("method".to_string(), to_value(method).unwrap());
-        args
-    }
 
     #[test]
     fn test_path_to_func_name_simple_path() {
