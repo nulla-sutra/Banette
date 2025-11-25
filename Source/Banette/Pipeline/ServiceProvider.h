@@ -24,7 +24,7 @@ namespace Banette::Pipeline
 			{
 				return Service;
 			}
-			
+
 			if constexpr (!std::is_same_v<ProviderT, void>)
 			{
 				Service = ProviderT::BuildService();
@@ -33,7 +33,7 @@ namespace Banette::Pipeline
 			{
 				Service = BuildService();
 			}
-			
+
 			return Service;
 		};
 	};

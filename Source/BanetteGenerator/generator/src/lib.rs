@@ -64,7 +64,7 @@ pub extern "C" fn generate(
 /// 2. Initializes a Tera template engine instance for rendering templates.
 /// 3. Ensures the existence of the `output_dir`, creating the directory if it is missing.
 /// 4. Registers custom Tera filters that provide specific processing utilities during rendering:
-///    - `to_ue_type`: Converts to Unreal Engine type.
+///    - `to_ue_type`: Converts to an Unreal Engine type.
 ///    - `is_required`: Determines if a field is required.
 ///    - `path_to_func_name`: Converts a path to a function-friendly name.
 ///    - `request_body_schema`: Extracts the request body schema.
