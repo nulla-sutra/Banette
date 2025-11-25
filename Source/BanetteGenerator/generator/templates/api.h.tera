@@ -79,7 +79,7 @@ public:
             bSuccess = true;
             bSuccess &= Resp->GetBase().bSucceeded;
             {%- if operation.responses  %}
-            bSuccess = FJsonObjectConverter::JsonObjectToUStruct(Resp->GetContent<FJsonObject>().ToSharedRef(), &ResponseBody);
+            bSuccess &= FJsonObjectConverter::JsonObjectToUStruct(Resp->GetContent<FJsonObject>().ToSharedRef(), &ResponseBody);
             {%- endif %}
         }
         co_return;
