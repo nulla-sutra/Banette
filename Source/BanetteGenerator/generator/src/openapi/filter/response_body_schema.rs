@@ -61,7 +61,7 @@ mod tests {
     use serde_json::json;
     use tera::to_value;
 
-    use crate::openapi::filter::to_ue_type::to_ue_type_filter;
+    use super::super::to_ue_type::to_ue_type_filter;
 
     #[test]
     fn test_response_body_schema_with_200_status() {
