@@ -63,6 +63,7 @@ mod tests {
 
     //noinspection SpellCheckingInspection
     #[test]
+    #[ignore = "Requires a JSON endpoint to be running"]
     fn test_load_openapi_spec() {
         load_openapi_spec("http://127.0.0.1:10802/docs/api.json").unwrap();
     }
