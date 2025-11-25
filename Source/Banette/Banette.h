@@ -13,5 +13,6 @@
 #include "Banette/Core/Layer.h"
 
 #include "Banette/Pipeline/ServiceBuilder.h"
+#include "Banette/Pipeline/ServiceProvider.h"
 
 #undef BANETTE_PRIVATE_ALLOW_DIRECT_INCLUDE

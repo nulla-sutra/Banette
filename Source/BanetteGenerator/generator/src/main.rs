@@ -1,5 +1,9 @@
+/*
+ * Copyright 2019-Present tarnishablec. All Rights Reserved.
+ */
+
 use clap::Parser;
-use generator::generate_safe;
+use generator::openapi::generate_safe;
 
 #[derive(Parser)]
 struct Args {

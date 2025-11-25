@@ -9,6 +9,7 @@ void UBanetteGeneratorLibrary::GenerateOpenApi(const FString OpenApiPath,
                                                const FString FileName,
                                                const FString ModuleName)
 {
+	using namespace banette::ffi::generator::openapi;
 	generate(StringCast<ANSICHAR>(*OpenApiPath).Get(),
 	         StringCast<ANSICHAR>(*OutputDir).Get(),
 	         StringCast<ANSICHAR>(*FileName).Get(),

@@ -4,7 +4,7 @@
 #include "BanetteTestLibrary.h"
 #include "BanetteKit/Layers/RetryLayer.h"
 #include "BanetteKit/Layers/ExtractLayer.h"
-#include "BanetteTransport/Http/BanetteHttp.h"
+#include "BanetteTransport/Http/HttpService.h"
 #include "Dom/JsonObject.h"
 
 using namespace Banette::Transport::Http;
@@ -39,13 +39,14 @@ FVoidCoroutine UBanetteTestLibrary::Test(FJsonObjectWrapper& Json, FLatentAction
 				StringCast<TCHAR>(reinterpret_cast<const char*>(Bytes.GetData())).Get()
 			);
 
-			TSharedPtr<FJsonObject> OutJson;
+			TSharedPtr<FJsonValue> OutJson;
 			const TSharedRef<TJsonReader<>> Reader =
 				TJsonReaderFactory<>::Create(JsonString);
 
 			UE_LOG(LogTemp, Warning, TEXT("JSON: [%s]"), *JsonString);
 
 			FJsonSerializer::Deserialize(Reader, OutJson);
+			
 			return OutJson;
 		});
 

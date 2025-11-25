@@ -14,7 +14,9 @@ public class BanetteTransport : ModuleRules
 				"CoreUObject",
 				"HTTP",
 				"UE5Coro",
-				"Banette"
+				"Banette",
+				"Json",
+				"JsonUtilities"
 			}
 		);
 

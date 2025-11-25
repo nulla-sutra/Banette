@@ -3,11 +3,10 @@
 
 #include "CoreMinimal.h"
 #include "StructUtils/InstancedStruct.h"
-#include "Pipeline/ServiceProvider.h"
 #include "UE5Coro.h"
-#include "JsonObjectConverter.h"
 #include "BanetteKit/Layers/ExtractLayer.h"
-#include "BanetteTransport/Http/BanetteHttp.h"
+#include "BanetteTransport/Http/HttpService.h"
+#include "BanetteTransport/Json/JsonConverter.h"
 #include "{{ file_name }}.generated.h"
 
 /**
@@ -41,6 +40,7 @@ using namespace Banette::Core;
 using namespace Banette::Pipeline;
 using namespace Banette::Kit;
 using namespace Banette::Transport::Http;
+using namespace Banette::Transport::Json;
 
 using F{{ file_name }}Service = TService<FHttpRequest, TExtractedResponse<FHttpResponse>>;
 
@@ -79,7 +79,7 @@ public:
             bSuccess = true;
             bSuccess &= Resp->GetBase().bSucceeded;
             {%- if operation.responses  %}
-            bSuccess &= FJsonObjectConverter::JsonObjectToUStruct(Resp->GetContent<FJsonObject>().ToSharedRef(), &ResponseBody);
+            bSuccess &= JsonToCpp(Resp->GetContent<FJsonValue>(), ResponseBody);
             {%- endif %}
         }
         co_return;

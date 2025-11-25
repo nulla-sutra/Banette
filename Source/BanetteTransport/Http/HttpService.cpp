@@ -1,6 +1,6 @@
 // Copyright 2019-Present tarnishablec. All Rights Reserved.
 
-#include "Http/BanetteHttp.h"
+#include "Http/HttpService.h"
 
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
