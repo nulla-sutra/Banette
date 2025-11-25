@@ -48,7 +48,7 @@ pub(crate) fn load_openapi_spec(path: &str) -> Result<Spec> {
         }
         Format::Yaml => {
             // Validate YAML with serde_yaml_bw before parsing with oas3
-            let _yaml_value: serde_yaml_bw::Value =
+            let _: serde_yaml_bw::Value =
                 serde_yaml_bw::from_str(&raw_spec).context("Failed to parse initial YAML content with serde-yaml-bw")?;
 
             from_yaml(&raw_spec).context("Failed to parse YAML into OpenAPI Spec object")
