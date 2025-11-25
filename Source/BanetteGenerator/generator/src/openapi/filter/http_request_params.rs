@@ -38,10 +38,10 @@ pub fn http_request_params_filter(value: &Value, args: &HashMap<String, Value>) 
     // 4. Convert the HTTP method to EHttpMethod enum value
     let http_method = convert_to_http_method(method)?;
 
-    // 5. Extract path parameters from the path string (e.g., {id}, {user_id})
-    let path_params = extract_path_parameters(path);
+    // 5. Extract path parameters from the parameters array (where "in": "path")
+    let path_params = extract_path_parameters(parameters);
 
-    // 6. Extract query parameters from the parameters array
+    // 6. Extract query parameters from the parameters array (where "in": "query")
     let query_params = extract_query_parameters(parameters);
 
     // 7. Build the URL expression
@@ -79,30 +79,26 @@ fn escape_cpp_string(s: &str) -> String {
     s.replace('\\', "\\\\").replace('"', "\\\"")
 }
 
-/// Extract path parameters from a path string.
+/// Extract path parameters from the OpenAPI parameters array.
 ///
-/// Path parameters are enclosed in curly braces, e.g., `/user/{id}/posts/{post_id}`
-/// Returns a vector of parameter names without the braces.
-fn extract_path_parameters(path: &str) -> Vec<String> {
-    let mut params = Vec::new();
-    let mut in_param = false;
-    let mut param_name = String::new();
-
-    for ch in path.chars() {
-        if ch == '{' {
-            in_param = true;
-            param_name.clear();
-        } else if ch == '}' {
-            if in_param && !param_name.is_empty() {
-                params.push(param_name.clone());
-            }
-            in_param = false;
-        } else if in_param {
-            param_name.push(ch);
-        }
-    }
+/// Path parameters have `"in": "path"` in their definition.
+/// Returns a vector of parameter names.
+fn extract_path_parameters(parameters: Option<&Vec<Value>>) -> Vec<String> {
+    let Some(params) = parameters else {
+        return Vec::new();
+    };
 
     params
+        .iter()
+        .filter_map(|param| {
+            let in_type = param.get("in")?.as_str()?;
+            if in_type == "path" {
+                param.get("name")?.as_str().map(String::from)
+            } else {
+                None
+            }
+        })
+        .collect()
 }
 
 /// Extract query parameters from the OpenAPI parameters array.
@@ -195,7 +191,10 @@ mod tests {
     #[test]
     fn test_http_request_params_with_path_parameter() {
         let path = json!("/character/{id}");
-        let args = create_method_args("post");
+        let params = json!([
+            {"in": "path", "name": "id", "required": true, "schema": {"type": "string"}}
+        ]);
+        let args = create_args_with_params("post", Some(params));
 
         let result = http_request_params_filter(&path, &args).unwrap();
         assert_eq!(
@@ -207,7 +206,10 @@ mod tests {
     #[test]
     fn test_http_request_params_put_method() {
         let path = json!("/api/resource/{id}");
-        let args = create_method_args("put");
+        let params = json!([
+            {"in": "path", "name": "id", "required": true, "schema": {"type": "string"}}
+        ]);
+        let args = create_args_with_params("put", Some(params));
 
         let result = http_request_params_filter(&path, &args).unwrap();
         assert_eq!(
@@ -219,7 +221,10 @@ mod tests {
     #[test]
     fn test_http_request_params_delete_method() {
         let path = json!("/items/{item_id}");
-        let args = create_method_args("delete");
+        let params = json!([
+            {"in": "path", "name": "item_id", "required": true, "schema": {"type": "string"}}
+        ]);
+        let args = create_args_with_params("delete", Some(params));
 
         let result = http_request_params_filter(&path, &args).unwrap();
         assert_eq!(
@@ -231,7 +236,10 @@ mod tests {
     #[test]
     fn test_http_request_params_patch_method() {
         let path = json!("/user/{user_id}/profile");
-        let args = create_method_args("patch");
+        let params = json!([
+            {"in": "path", "name": "user_id", "required": true, "schema": {"type": "string"}}
+        ]);
+        let args = create_args_with_params("patch", Some(params));
 
         let result = http_request_params_filter(&path, &args).unwrap();
         assert_eq!(
@@ -279,7 +287,11 @@ mod tests {
     #[test]
     fn test_http_request_params_complex_path() {
         let path = json!("/api/v2/{resource_id}/sub/{sub_id}/details");
-        let args = create_method_args("get");
+        let params = json!([
+            {"in": "path", "name": "resource_id", "required": true, "schema": {"type": "string"}},
+            {"in": "path", "name": "sub_id", "required": true, "schema": {"type": "string"}}
+        ]);
+        let args = create_args_with_params("get", Some(params));
 
         let result = http_request_params_filter(&path, &args).unwrap();
         assert_eq!(
@@ -397,16 +409,29 @@ mod tests {
 
     #[test]
     fn test_extract_path_parameters() {
+        let params = json!([
+            {"in": "path", "name": "id"},
+            {"in": "query", "name": "shard"}
+        ]);
         assert_eq!(
-            extract_path_parameters("/user/{id}"),
+            extract_path_parameters(params.as_array()),
             vec!["id".to_string()]
         );
+
+        let params_multi = json!([
+            {"in": "path", "name": "user_id"},
+            {"in": "path", "name": "post_id"},
+            {"in": "query", "name": "limit"}
+        ]);
         assert_eq!(
-            extract_path_parameters("/user/{user_id}/posts/{post_id}"),
+            extract_path_parameters(params_multi.as_array()),
             vec!["user_id".to_string(), "post_id".to_string()]
         );
-        assert!(extract_path_parameters("/users").is_empty());
-        assert!(extract_path_parameters("/users/{}").is_empty()); // Empty braces
+
+        assert!(extract_path_parameters(None).is_empty());
+
+        let empty_params = json!([]);
+        assert!(extract_path_parameters(empty_params.as_array()).is_empty());
     }
 
     #[test]
