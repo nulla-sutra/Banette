@@ -16,7 +16,10 @@ fn infer_format(path: &str) -> Result<Format> {
     } else if path.ends_with(".yaml") || path.ends_with(".yml") {
         Ok(Format::Yaml)
     } else {
-        anyhow::bail!("Failed to detect OpenAPI format from path: {}. Expected .json, .yaml, or .yml suffix", path)
+        anyhow::bail!(
+            "Failed to detect OpenAPI format from path: {}. Expected .json, .yaml, or .yml suffix",
+            path
+        )
     }
 }
 
@@ -41,15 +44,15 @@ pub(crate) fn load_openapi_spec(path: &str) -> Result<Spec> {
                 serde_json::from_str(&raw_spec).context("Failed to parse initial JSON content")?;
 
             // Re-serialize to pretty string for debugging purposes
-            let pretty_str =
-                serde_json::to_string_pretty(&spec_json).context("Failed to normalize JSON structure")?;
+            let pretty_str = serde_json::to_string_pretty(&spec_json)
+                .context("Failed to normalize JSON structure")?;
 
             from_json(&pretty_str).context("Failed to parse into OpenAPI Spec object")
         }
         Format::Yaml => {
             // Validate YAML with serde_yaml_bw before parsing with oas3
-            let _: serde_yaml_bw::Value =
-                serde_yaml_bw::from_str(&raw_spec).context("Failed to parse initial YAML content with serde-yaml-bw")?;
+            let _: serde_yaml_bw::Value = serde_yaml_bw::from_str(&raw_spec)
+                .context("Failed to parse initial YAML content with serde-yaml-bw")?;
 
             from_yaml(&raw_spec).context("Failed to parse YAML into OpenAPI Spec object")
         }
@@ -86,18 +89,22 @@ paths: {}
         // Write to a temp file
         let temp_dir = std::env::temp_dir();
         let temp_file = temp_dir.join("test_openapi.yaml");
-        let mut file = std::fs::File::create(&temp_file).unwrap();
+        let mut file = fs::File::create(&temp_file).unwrap();
         file.write_all(yaml_content.as_bytes()).unwrap();
 
         let result = load_openapi_spec(temp_file.to_str().unwrap());
-        assert!(result.is_ok(), "Failed to load YAML spec: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Failed to load YAML spec: {:?}",
+            result.err()
+        );
 
         let spec = result.unwrap();
         assert_eq!(spec.info.title, "Test API");
         assert_eq!(spec.info.version, "1.0.0");
 
         // Cleanup
-        std::fs::remove_file(temp_file).ok();
+        fs::remove_file(temp_file).ok();
     }
 
     #[test]
@@ -111,16 +118,20 @@ paths: {}
 "#;
         let temp_dir = std::env::temp_dir();
         let temp_file = temp_dir.join("test_openapi.yml");
-        let mut file = std::fs::File::create(&temp_file).unwrap();
+        let mut file = fs::File::create(&temp_file).unwrap();
         file.write_all(yaml_content.as_bytes()).unwrap();
 
         let result = load_openapi_spec(temp_file.to_str().unwrap());
-        assert!(result.is_ok(), "Failed to load YML spec: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Failed to load YML spec: {:?}",
+            result.err()
+        );
 
         let spec = result.unwrap();
         assert_eq!(spec.info.title, "YML Extension Test");
 
-        std::fs::remove_file(temp_file).ok();
+        fs::remove_file(temp_file).ok();
     }
 
     #[test]
@@ -135,42 +146,61 @@ paths: {}
 }"#;
         let temp_dir = std::env::temp_dir();
         let temp_file = temp_dir.join("test_openapi.json");
-        let mut file = std::fs::File::create(&temp_file).unwrap();
+        let mut file = fs::File::create(&temp_file).unwrap();
         file.write_all(json_content.as_bytes()).unwrap();
 
         let result = load_openapi_spec(temp_file.to_str().unwrap());
-        assert!(result.is_ok(), "Failed to load JSON spec: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Failed to load JSON spec: {:?}",
+            result.err()
+        );
 
         let spec = result.unwrap();
         assert_eq!(spec.info.title, "JSON Test API");
         assert_eq!(spec.info.version, "3.0.0");
 
-        std::fs::remove_file(temp_file).ok();
+        fs::remove_file(temp_file).ok();
     }
 
     #[test]
     fn test_infer_format_json() {
-        assert!(matches!(infer_format("path/to/spec.json").unwrap(), Format::Json));
+        assert!(matches!(
+            infer_format("path/to/spec.json").unwrap(),
+            Format::Json
+        ));
     }
 
     #[test]
     fn test_infer_format_yaml() {
-        assert!(matches!(infer_format("path/to/spec.yaml").unwrap(), Format::Yaml));
+        assert!(matches!(
+            infer_format("path/to/spec.yaml").unwrap(),
+            Format::Yaml
+        ));
     }
 
     #[test]
     fn test_infer_format_yml() {
-        assert!(matches!(infer_format("path/to/spec.yml").unwrap(), Format::Yaml));
+        assert!(matches!(
+            infer_format("path/to/spec.yml").unwrap(),
+            Format::Yaml
+        ));
     }
 
     #[test]
     fn test_infer_format_http_json() {
-        assert!(matches!(infer_format("https://example.com/openapi.json").unwrap(), Format::Json));
+        assert!(matches!(
+            infer_format("https://example.com/openapi.json").unwrap(),
+            Format::Json
+        ));
     }
 
     #[test]
     fn test_infer_format_http_yaml() {
-        assert!(matches!(infer_format("http://example.com/spec.yaml").unwrap(), Format::Yaml));
+        assert!(matches!(
+            infer_format("http://example.com/spec.yaml").unwrap(),
+            Format::Yaml
+        ));
     }
 
     #[test]

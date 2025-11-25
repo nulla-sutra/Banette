@@ -2,7 +2,7 @@
 
 
 #include "BanetteGeneratorLibrary.h"
-#include  "BanetteGenerator/generator/bindings.h"
+#include "BanetteGenerator/generator/bindings.h"
 
 void UBanetteGeneratorLibrary::GenerateOpenApi(const FString OpenApiPath,
                                                const FString OutputDir,
