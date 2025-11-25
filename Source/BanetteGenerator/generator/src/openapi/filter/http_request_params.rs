@@ -30,9 +30,12 @@ pub fn http_request_params_filter(value: &Value, args: &HashMap<String, Value>) 
     // 3. Convert the HTTP method to EHttpMethod enum value
     let http_method = convert_to_http_method(method)?;
 
-    // 4. Build the constructor parameters string
+    // 4. Escape special characters in the path for C++ string literal
+    let escaped_path = escape_cpp_string(path);
+
+    // 5. Build the constructor parameters string
     // Format: TEXT("path"), EHttpMethod::Method
-    let params = format!("TEXT(\"{}\"), EHttpMethod::{}", path, http_method);
+    let params = format!("TEXT(\"{}\"), EHttpMethod::{}", escaped_path, http_method);
 
     Ok(to_value(params)?)
 }
@@ -54,6 +57,13 @@ fn convert_to_http_method(method: &str) -> Result<&'static str> {
             method
         ))),
     }
+}
+
+/// Escape special characters in a string for use in a C++ string literal.
+///
+/// Escapes backslashes and double quotes to prevent code injection.
+fn escape_cpp_string(s: &str) -> String {
+    s.replace('\\', "\\\\").replace('"', "\\\"")
 }
 
 #[cfg(test)]
@@ -250,5 +260,37 @@ mod tests {
         assert_eq!(convert_to_http_method("DELETE").unwrap(), "Delete");
         assert_eq!(convert_to_http_method("PATCH").unwrap(), "Patch");
         assert_eq!(convert_to_http_method("HEAD").unwrap(), "Head");
+    }
+
+    #[test]
+    fn test_escape_cpp_string() {
+        assert_eq!(escape_cpp_string("simple"), "simple");
+        assert_eq!(escape_cpp_string("with\"quote"), "with\\\"quote");
+        assert_eq!(escape_cpp_string("with\\backslash"), "with\\\\backslash");
+        assert_eq!(escape_cpp_string("both\"and\\here"), "both\\\"and\\\\here");
+    }
+
+    #[test]
+    fn test_http_request_params_with_special_characters() {
+        let path = json!("/api/path\"with\"quotes");
+        let args = create_method_args("get");
+
+        let result = http_request_params_filter(&path, &args).unwrap();
+        assert_eq!(
+            result.as_str().unwrap(),
+            "TEXT(\"/api/path\\\"with\\\"quotes\"), EHttpMethod::Get"
+        );
+    }
+
+    #[test]
+    fn test_http_request_params_with_backslash() {
+        let path = json!("/api/path\\with\\backslash");
+        let args = create_method_args("post");
+
+        let result = http_request_params_filter(&path, &args).unwrap();
+        assert_eq!(
+            result.as_str().unwrap(),
+            "TEXT(\"/api/path\\\\with\\\\backslash\"), EHttpMethod::Post"
+        );
     }
 }
