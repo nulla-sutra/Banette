@@ -23,7 +23,7 @@ fn infer_format(path: &str) -> Result<Format> {
     }
 }
 
-pub(crate) fn load_openapi_spec(path: &str) -> Result<Spec> {
+pub fn load_openapi_spec(path: &str) -> Result<Spec> {
     let format = infer_format(path).context("Failed to detect OpenAPI format from path")?;
 
     let raw_spec = if path.starts_with("http://") || path.starts_with("https://") {

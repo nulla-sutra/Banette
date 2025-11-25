@@ -4,7 +4,7 @@ use tera::{Result, Value, to_value};
 /// Tera filter to check if a property is required.
 ///
 /// Usage in the template: {{ prop_name | is_required(required_list=schema.required) }}
-pub(crate) fn is_required_filter(value: &Value, args: &HashMap<String, Value>) -> Result<Value> {
+pub fn is_required_filter(value: &Value, args: &HashMap<String, Value>) -> Result<Value> {
     // 1. Get the property name to check (prop_name)
     let prop_name = value.as_str().ok_or_else(|| {
         tera::Error::msg("is_required filter expects property name as input string.")

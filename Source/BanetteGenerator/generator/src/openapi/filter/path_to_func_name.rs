@@ -10,10 +10,7 @@ use tera::{Result, Value, to_value};
 /// - `/character/{id}`, method="get" -> `GET_Character_By_Id`
 /// - `/user/{user_id}/posts`, method="get" -> `GET_User_Posts_By_UserId`
 /// - `/api/{resource_id}/sub/{sub_id}`, method="post" -> `POST_Api_Sub_By_ResourceId_SubId`
-pub(crate) fn path_to_func_name_filter(
-    value: &Value,
-    args: &HashMap<String, Value>,
-) -> Result<Value> {
+pub fn path_to_func_name_filter(value: &Value, args: &HashMap<String, Value>) -> Result<Value> {
     let path = value
         .as_str()
         .ok_or_else(|| tera::Error::msg("Path must be a string"))?;
@@ -29,11 +26,10 @@ pub(crate) fn path_to_func_name_filter(
     let cleaned_path = path.trim_start_matches('/');
 
     // 3. Split and separate into regular segments and parameters
-    let parts: Vec<&str> = cleaned_path.split('/').collect();
     let mut regular_segments = Vec::new();
     let mut parameters = Vec::new();
 
-    for part in parts {
+    for part in cleaned_path.split('/') {
         if part.is_empty() {
             continue;
         }
@@ -105,7 +101,7 @@ fn convert_to_pascal_case(input: &str) -> String {
             capitalize_next = false;
         } else if capitalize_next {
             // Capitalize this character
-            result.push_str(&ch.to_uppercase().to_string());
+            result.extend(ch.to_uppercase());
             capitalize_next = false;
         } else {
             // Keep the character as-is

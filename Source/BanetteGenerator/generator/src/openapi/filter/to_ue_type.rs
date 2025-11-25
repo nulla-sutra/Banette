@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use tera::{Result, Value, to_value};
 
-pub(crate) fn to_ue_type_filter(value: &Value, _args: &HashMap<String, Value>) -> Result<Value> {
+pub fn to_ue_type_filter(value: &Value, _args: &HashMap<String, Value>) -> Result<Value> {
     fn get_cpp_type(schema: &Value) -> String {
         // 1. Handle boolean Schema (true/false)
         if let Some(is_any) = schema.as_bool() {

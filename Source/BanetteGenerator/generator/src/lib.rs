@@ -1,9 +1,6 @@
-mod openapi;
+pub mod openapi;
 
-use crate::openapi::filter::{
-    is_required_filter, path_to_func_name_filter, request_body_schema_filter,
-    response_body_schema_filter, tags_to_pipe_separated_filter, to_ue_type_filter,
-};
+use crate::openapi::filter::register_all_filters;
 use crate::openapi::loader::load_openapi_spec;
 use anyhow::anyhow;
 use std::ffi::{CStr, c_char};
@@ -123,15 +120,9 @@ pub fn generate_safe(
     }
 
     let file_path = out_path.join(file_name);
-
     let file_name_base = file_path.file_stem().unwrap_or_default().to_string_lossy();
 
-    tera.register_filter("to_ue_type", to_ue_type_filter);
-    tera.register_filter("is_required", is_required_filter);
-    tera.register_filter("path_to_func_name", path_to_func_name_filter);
-    tera.register_filter("request_body_schema", request_body_schema_filter);
-    tera.register_filter("response_body_schema", response_body_schema_filter);
-    tera.register_filter("tags_to_pipe_separated", tags_to_pipe_separated_filter);
+    register_all_filters(&mut tera);
 
     #[cfg(debug_assertions)]
     {
