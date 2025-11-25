@@ -1,5 +1,9 @@
+/*
+ * Copyright 2019-Present tarnishablec. All Rights Reserved.
+ */
+
 use std::collections::HashMap;
-use tera::{Result, Value, to_value};
+use tera::{to_value, Result, Value};
 
 /// Tera filter to check if a property is required.
 ///

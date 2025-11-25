@@ -1,3 +1,7 @@
+/*
+ * Copyright 2019-Present tarnishablec. All Rights Reserved.
+ */
+
 use std::collections::HashMap;
 use tera::{Result, Value};
 

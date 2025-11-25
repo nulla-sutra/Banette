@@ -1,3 +1,7 @@
+/*
+ * Copyright 2019-Present tarnishablec. All Rights Reserved.
+ */
+
 pub mod http_request_params;
 pub mod is_required;
 pub mod path_to_func_name;
