@@ -7,6 +7,8 @@
 
 namespace Banette::Pipeline
 {
+	using namespace Banette::Core;
+	
 	template <CService T, typename ProviderT = void>
 	struct TServiceProvider
 	{

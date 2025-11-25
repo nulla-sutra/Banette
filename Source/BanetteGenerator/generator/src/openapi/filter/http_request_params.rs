@@ -38,10 +38,10 @@ pub fn http_request_params_filter(value: &Value, args: &HashMap<String, Value>) 
     // 4. Convert the HTTP method to EHttpMethod enum value
     let http_method = convert_to_http_method(method)?;
 
-    // 5. Extract path parameters from the parameters array (where "in": "path")
+    // 5. Extract path parameters from the parameter array (where "in": "path")
     let path_params = extract_path_parameters(parameters);
 
-    // 6. Extract query parameters from the parameters array (where "in": "query")
+    // 6. Extract query parameters from the parameter array (where "in": "query")
     let query_params = extract_query_parameters(parameters);
 
     // 7. Build the URL expression
@@ -125,7 +125,7 @@ fn extract_query_parameters(parameters: Option<&Vec<Value>>) -> Vec<String> {
 
 /// Build the URL expression for the FHttpRequest constructor.
 ///
-/// If there are path parameters or query parameters, uses FString::Format with
+/// If there are path parameters or query parameters, use FString::Format with
 /// FStringFormatNamedArguments. Otherwise, uses a simple TEXT() macro.
 fn build_url_expression(path: &str, path_params: &[String], query_params: &[String]) -> String {
     let escaped_path = escape_cpp_string(path);
@@ -145,7 +145,7 @@ fn build_url_expression(path: &str, path_params: &[String], query_params: &[Stri
         url_template = format!("{}?{}", url_template, query_string.join("&"));
     }
 
-    // Collect all parameter names (path + query)
+    // Collect all parameter names (path and query)
     let all_params: Vec<&String> = path_params.iter().chain(query_params.iter()).collect();
 
     // Build FStringFormatNamedArguments

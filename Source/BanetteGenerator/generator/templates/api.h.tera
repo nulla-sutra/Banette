@@ -3,7 +3,11 @@
 
 #include "CoreMinimal.h"
 #include "StructUtils/InstancedStruct.h"
+#include "Pipeline/ServiceProvider.h"
 #include "UE5Coro.h"
+#include "JsonObjectConverter.h"
+#include "BanetteKit/Layers/ExtractLayer.h"
+#include "BanetteTransport/Http/BanetteHttp.h"
 #include "{{ file_name }}.generated.h"
 
 /**
@@ -33,14 +37,21 @@ struct {%- if module_name %} {{ module_name }} {% else %} {% endif -%}F{{ name }
 };
 {% endfor %}
 
+using namespace Banette::Core;
+using namespace Banette::Pipeline;
+using namespace Banette::Kit;
+using namespace Banette::Transport::Http;
+
+using F{{ file_name }}Service = TService<FHttpRequest, TExtractedResponse<FHttpResponse>>;
+
 UCLASS()
 class {%- if module_name %} {{ module_name }} {% else %} {% endif -%}U{{ file_name }}Library : public UBlueprintFunctionLibrary
 {
     GENERATED_BODY()
 
 public:
-{% for path, path_item in paths %}
-    {% for method, operation in path_item %}
+{% for path, path_item in paths -%}
+    {%- for method, operation in path_item %}
     /**
      * Summary: {{ operation.summary | default(value='No summary provided.') }}
      * Endpoint: {{ method | upper }} {{ path }}
@@ -58,11 +69,19 @@ public:
         
         {%- if operation.responses -%}
             {%- set body_type = operation.responses | response_body_schema | to_ue_type -%}
-            {{ body_type }}& ResponseBody,
-        {%- endif -%}
-        
-        FLatentActionInfo LatentInfo)
+            {{ body_type }}& ResponseBody, {% endif -%}
+            
+        bool& bSuccess, FLatentActionInfo LatentInfo)
     {
+        if (const auto* Resp = (co_await TServiceProvider<F{{ file_name }}Service>::GetService()->Call(
+            FHttpRequest({{ path | http_request_params(method=method, parameters=operation.parameters | default(value=[])) }}))).TryGetValue())
+        {
+            bSuccess = true;
+            bSuccess &= Resp->GetBase().bSucceeded;
+            {%- if operation.responses  %}
+            bSuccess = FJsonObjectConverter::JsonObjectToUStruct(Resp->GetContent<FJsonObject>().ToSharedRef(), &ResponseBody);
+            {%- endif %}
+        }
         co_return;
     };
     {%- endfor -%}
