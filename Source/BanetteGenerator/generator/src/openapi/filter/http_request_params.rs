@@ -7,18 +7,19 @@ use tera::{to_value, Result, Value};
 
 /// Tera filter to assemble FHttpRequest constructor parameters from a path-item.
 ///
-/// This filter takes a path string and HTTP method, then generates the parameters
-/// needed to construct an FHttpRequest in Unreal Engine C++.
+/// This filter takes a path string, HTTP method, and optional parameters, then generates
+/// the parameters needed to construct an FHttpRequest in Unreal Engine C++.
 ///
 /// FHttpRequest has the following fields:
 /// - Url: FString - The absolute URL to call
 /// - Method: EHttpMethod - The HTTP verb (Get, Post, Put, Delete, Patch, Head)
 ///
-/// Usage in the template: {{ path | http_request_params(method=method) }}
+/// Usage in the template: {{ path | http_request_params(method=method, parameters=operation.parameters) }}
 ///
 /// Examples:
 /// - `/v1/player/characters`, method="get" -> `TEXT("/v1/player/characters"), EHttpMethod::Get`
-/// - `/character/{id}`, method="post" -> `TEXT("/character/{id}"), EHttpMethod::Post`
+/// - `/character/{id}`, method="post" -> `FString::Format(TEXT("/character/{id}"), FStringFormatNamedArguments{{"id", id}}), EHttpMethod::Post`
+/// - `/v1/player/characters`, method="get", query params -> `FString::Format(TEXT("/v1/player/characters?shard={shard}"), FStringFormatNamedArguments{{"shard", shard}}), EHttpMethod::Get`
 pub fn http_request_params_filter(value: &Value, args: &HashMap<String, Value>) -> Result<Value> {
     // 1. Get the path string
     let path = value
@@ -31,15 +32,23 @@ pub fn http_request_params_filter(value: &Value, args: &HashMap<String, Value>) 
         .and_then(|v| v.as_str())
         .ok_or_else(|| tera::Error::msg("http_request_params requires a 'method' argument"))?;
 
-    // 3. Convert the HTTP method to EHttpMethod enum value
+    // 3. Get the optional parameters array
+    let parameters = args.get("parameters").and_then(|v| v.as_array());
+
+    // 4. Convert the HTTP method to EHttpMethod enum value
     let http_method = convert_to_http_method(method)?;
 
-    // 4. Escape special characters in the path for C++ string literal
-    let escaped_path = escape_cpp_string(path);
+    // 5. Extract path parameters from the path string (e.g., {id}, {user_id})
+    let path_params = extract_path_parameters(path);
 
-    // 5. Build the constructor parameters string
-    // Format: TEXT("path"), EHttpMethod::Method
-    let params = format!("TEXT(\"{}\"), EHttpMethod::{}", escaped_path, http_method);
+    // 6. Extract query parameters from the parameters array
+    let query_params = extract_query_parameters(parameters);
+
+    // 7. Build the URL expression
+    let url_expr = build_url_expression(path, &path_params, &query_params);
+
+    // 8. Build the constructor parameters string
+    let params = format!("{}, EHttpMethod::{}", url_expr, http_method);
 
     Ok(to_value(params)?)
 }
@@ -70,11 +79,106 @@ fn escape_cpp_string(s: &str) -> String {
     s.replace('\\', "\\\\").replace('"', "\\\"")
 }
 
+/// Extract path parameters from a path string.
+///
+/// Path parameters are enclosed in curly braces, e.g., `/user/{id}/posts/{post_id}`
+/// Returns a vector of parameter names without the braces.
+fn extract_path_parameters(path: &str) -> Vec<String> {
+    let mut params = Vec::new();
+    let mut in_param = false;
+    let mut param_name = String::new();
+
+    for ch in path.chars() {
+        if ch == '{' {
+            in_param = true;
+            param_name.clear();
+        } else if ch == '}' {
+            if in_param && !param_name.is_empty() {
+                params.push(param_name.clone());
+            }
+            in_param = false;
+        } else if in_param {
+            param_name.push(ch);
+        }
+    }
+
+    params
+}
+
+/// Extract query parameters from the OpenAPI parameters array.
+///
+/// Query parameters have `"in": "query"` in their definition.
+/// Returns a vector of parameter names.
+fn extract_query_parameters(parameters: Option<&Vec<Value>>) -> Vec<String> {
+    let Some(params) = parameters else {
+        return Vec::new();
+    };
+
+    params
+        .iter()
+        .filter_map(|param| {
+            let in_type = param.get("in")?.as_str()?;
+            if in_type == "query" {
+                param.get("name")?.as_str().map(String::from)
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+/// Build the URL expression for the FHttpRequest constructor.
+///
+/// If there are path parameters or query parameters, uses FString::Format with
+/// FStringFormatNamedArguments. Otherwise, uses a simple TEXT() macro.
+fn build_url_expression(path: &str, path_params: &[String], query_params: &[String]) -> String {
+    let escaped_path = escape_cpp_string(path);
+
+    // If no parameters, use simple TEXT() macro
+    if path_params.is_empty() && query_params.is_empty() {
+        return format!("TEXT(\"{}\")", escaped_path);
+    }
+
+    // Build the URL template with query parameters appended
+    let mut url_template = escaped_path;
+    if !query_params.is_empty() {
+        let query_string: Vec<String> = query_params
+            .iter()
+            .map(|name| format!("{}={{{}}}", name, name))
+            .collect();
+        url_template = format!("{}?{}", url_template, query_string.join("&"));
+    }
+
+    // Collect all parameter names (path + query)
+    let all_params: Vec<&String> = path_params.iter().chain(query_params.iter()).collect();
+
+    // Build FStringFormatNamedArguments
+    let args_entries: Vec<String> = all_params
+        .iter()
+        .map(|name| format!("{{\"{}\", {}}}", name, name))
+        .collect();
+    let format_args = format!("FStringFormatNamedArguments{{{}}}", args_entries.join(", "));
+
+    format!(
+        "FString::Format(TEXT(\"{}\"), {})",
+        url_template, format_args
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::openapi::filter::tests::create_method_args;
     use serde_json::json;
+
+    /// Helper function to create args with method and parameters
+    fn create_args_with_params(method: &str, parameters: Option<Value>) -> HashMap<String, Value> {
+        let mut args = create_method_args(method);
+        if let Some(params) = parameters {
+            args.insert("parameters".to_string(), params);
+        }
+        args
+    }
 
     #[test]
     fn test_http_request_params_simple_get() {
@@ -96,7 +200,7 @@ mod tests {
         let result = http_request_params_filter(&path, &args).unwrap();
         assert_eq!(
             result.as_str().unwrap(),
-            "TEXT(\"/character/{id}\"), EHttpMethod::Post"
+            "FString::Format(TEXT(\"/character/{id}\"), FStringFormatNamedArguments{{\"id\", id}}), EHttpMethod::Post"
         );
     }
 
@@ -108,7 +212,7 @@ mod tests {
         let result = http_request_params_filter(&path, &args).unwrap();
         assert_eq!(
             result.as_str().unwrap(),
-            "TEXT(\"/api/resource/{id}\"), EHttpMethod::Put"
+            "FString::Format(TEXT(\"/api/resource/{id}\"), FStringFormatNamedArguments{{\"id\", id}}), EHttpMethod::Put"
         );
     }
 
@@ -120,7 +224,7 @@ mod tests {
         let result = http_request_params_filter(&path, &args).unwrap();
         assert_eq!(
             result.as_str().unwrap(),
-            "TEXT(\"/items/{item_id}\"), EHttpMethod::Delete"
+            "FString::Format(TEXT(\"/items/{item_id}\"), FStringFormatNamedArguments{{\"item_id\", item_id}}), EHttpMethod::Delete"
         );
     }
 
@@ -132,7 +236,7 @@ mod tests {
         let result = http_request_params_filter(&path, &args).unwrap();
         assert_eq!(
             result.as_str().unwrap(),
-            "TEXT(\"/user/{user_id}/profile\"), EHttpMethod::Patch"
+            "FString::Format(TEXT(\"/user/{user_id}/profile\"), FStringFormatNamedArguments{{\"user_id\", user_id}}), EHttpMethod::Patch"
         );
     }
 
@@ -180,7 +284,7 @@ mod tests {
         let result = http_request_params_filter(&path, &args).unwrap();
         assert_eq!(
             result.as_str().unwrap(),
-            "TEXT(\"/api/v2/{resource_id}/sub/{sub_id}/details\"), EHttpMethod::Get"
+            "FString::Format(TEXT(\"/api/v2/{resource_id}/sub/{sub_id}/details\"), FStringFormatNamedArguments{{\"resource_id\", resource_id}, {\"sub_id\", sub_id}}), EHttpMethod::Get"
         );
     }
 
@@ -288,6 +392,94 @@ mod tests {
         assert_eq!(
             result.as_str().unwrap(),
             "TEXT(\"/api/path\\\\with\\\\backslash\"), EHttpMethod::Post"
+        );
+    }
+
+    #[test]
+    fn test_extract_path_parameters() {
+        assert_eq!(
+            extract_path_parameters("/user/{id}"),
+            vec!["id".to_string()]
+        );
+        assert_eq!(
+            extract_path_parameters("/user/{user_id}/posts/{post_id}"),
+            vec!["user_id".to_string(), "post_id".to_string()]
+        );
+        assert!(extract_path_parameters("/users").is_empty());
+        assert!(extract_path_parameters("/users/{}").is_empty()); // Empty braces
+    }
+
+    #[test]
+    fn test_extract_query_parameters() {
+        let params = json!([
+            {"in": "query", "name": "shard"},
+            {"in": "path", "name": "id"},
+            {"in": "query", "name": "limit"}
+        ]);
+
+        let result = extract_query_parameters(params.as_array());
+        assert_eq!(result, vec!["shard".to_string(), "limit".to_string()]);
+    }
+
+    #[test]
+    fn test_extract_query_parameters_empty() {
+        let result = extract_query_parameters(None);
+        assert!(result.is_empty());
+
+        let params = json!([]);
+        let result = extract_query_parameters(params.as_array());
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_http_request_params_with_query_parameters() {
+        let path = json!("/v1/player/characters");
+        let params = json!([
+            {
+                "in": "query",
+                "name": "shard",
+                "schema": {"type": "string", "default": "CN-1"}
+            }
+        ]);
+        let args = create_args_with_params("get", Some(params));
+
+        let result = http_request_params_filter(&path, &args).unwrap();
+        assert_eq!(
+            result.as_str().unwrap(),
+            "FString::Format(TEXT(\"/v1/player/characters?shard={shard}\"), FStringFormatNamedArguments{{\"shard\", shard}}), EHttpMethod::Get"
+        );
+    }
+
+    #[test]
+    fn test_http_request_params_with_path_and_query_parameters() {
+        let path = json!("/v1/player/characters/{id}");
+        let params = json!([
+            {"in": "path", "name": "id"},
+            {"in": "query", "name": "shard"}
+        ]);
+        let args = create_args_with_params("get", Some(params));
+
+        let result = http_request_params_filter(&path, &args).unwrap();
+        assert_eq!(
+            result.as_str().unwrap(),
+            "FString::Format(TEXT(\"/v1/player/characters/{id}?shard={shard}\"), FStringFormatNamedArguments{{\"id\", id}, {\"shard\", shard}}), EHttpMethod::Get"
+        );
+    }
+
+    #[test]
+    fn test_http_request_params_with_multiple_query_parameters() {
+        let path = json!("/v1/player/characters");
+        let params = json!([
+            {"in": "query", "name": "shard"},
+            {"in": "query", "name": "limit"},
+            {"in": "query", "name": "offset"}
+        ]);
+        let args = create_args_with_params("get", Some(params));
+
+        let result = http_request_params_filter(&path, &args).unwrap();
+        assert_eq!(
+            result.as_str().unwrap(),
+            "FString::Format(TEXT(\"/v1/player/characters?shard={shard}&limit={limit}&offset={offset}\"), FStringFormatNamedArguments{{\"shard\", shard}, {\"limit\", limit}, {\"offset\", offset}}), EHttpMethod::Get"
         );
     }
 }
