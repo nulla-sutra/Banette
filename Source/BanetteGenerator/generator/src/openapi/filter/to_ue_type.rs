@@ -68,16 +68,18 @@ pub fn to_ue_type_filter(value: &Value, _args: &HashMap<String, Value>) -> Resul
 
             // Handle case where type is an array (nullable types like ["integer", "null"])
             if let Some(type_array) = type_value.as_array() {
-                // Filter out "null" and get the concrete types
-                let concrete_types: Vec<&str> = type_array
+                // Filter out "null" and find the concrete type(s)
+                let mut concrete_types = type_array
                     .iter()
                     .filter_map(|v| v.as_str())
-                    .filter(|t| *t != "null")
-                    .collect();
+                    .filter(|t| *t != "null");
 
-                // If there's exactly one concrete type, use it
-                if concrete_types.len() == 1 {
-                    return concrete_types[0].to_string();
+                // Get the first concrete type
+                if let Some(first) = concrete_types.next() {
+                    // If there's exactly one concrete type (no more after first), use it
+                    if concrete_types.next().is_none() {
+                        return first.to_string();
+                    }
                 }
             }
         }
