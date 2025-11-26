@@ -106,7 +106,7 @@ namespace Banette::Kit
 					if (bOverrideExisting)
 					{
 						// Always set/replace the header
-						ModifiedRequest.Headers.Add(Kvp.Key, Kvp.Value);
+						ModifiedRequest.Headers.FindOrAdd(Kvp.Key) = Kvp.Value;
 					}
 					else
 					{
