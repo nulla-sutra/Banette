@@ -12,6 +12,7 @@ public class BanetteKit : ModuleRules
 				"Core",
 				"UE5Coro",
 				"Banette",
+				"BanetteTransport",
 				"Json",
 				"JsonUtilities",
 			}
