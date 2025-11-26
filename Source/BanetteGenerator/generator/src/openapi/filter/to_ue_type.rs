@@ -61,12 +61,12 @@ pub fn to_ue_type_filter(value: &Value, _args: &HashMap<String, Value>) -> Resul
     /// Returns the non-null concrete type, or falls back to "object" if none is found.
     fn get_effective_type(schema: &Value) -> String {
         if let Some(type_value) = schema.get("type") {
-            // Handle case where type is a simple string
+            // Handle case where the type is a simple string
             if let Some(type_str) = type_value.as_str() {
                 return type_str.to_string();
             }
 
-            // Handle case where type is an array (nullable types like ["integer", "null"])
+            // Handle case where the type is an array (nullable types like ["integer", "null"])
             if let Some(type_array) = type_value.as_array() {
                 // Filter out "null" and find the concrete type(s)
                 let mut concrete_types = type_array
@@ -76,7 +76,7 @@ pub fn to_ue_type_filter(value: &Value, _args: &HashMap<String, Value>) -> Resul
 
                 // Get the first concrete type
                 if let Some(first) = concrete_types.next() {
-                    // If there's exactly one concrete type (no more after first), use it
+                    // If there's exactly one concrete type (no more after the first), use it
                     if concrete_types.next().is_none() {
                         return first.to_string();
                     }
