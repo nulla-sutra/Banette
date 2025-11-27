@@ -10,30 +10,25 @@ namespace Banette::Pipeline
 	using namespace Banette::Core;
 
 	template <CService T>
-	struct TServiceTag
-	{
-		using ServiceType = T;
-	};
-
-	template <CService T>
-	TSharedPtr<T> BuildService(TServiceTag<T>)
-	{
-		static_assert(sizeof(T) == 0,
-		              "Banette::Pipeline::GetServiceImpl(TServiceTag<T>) is not specialized "
-		              "for this service type T. Please provide an overload in some header.");
-		return nullptr;
-	}
-
-	template <CService T>
 	struct TServiceProvider
 	{
+		virtual ~TServiceProvider() = default;
+
+		static TSharedPtr<T> BuildService()
+		{
+			static_assert(sizeof(T) == 0,
+			              "Banette::Pipeline::GetServiceImpl(TServiceTag<T>) is not specialized "
+			              "for this service type T. Please provide an overload in some header.");
+			return nullptr;
+		}
+
 		static TSharedPtr<T> GetService()
 		{
 			static TSharedPtr<T> Service = nullptr;
 
 			if (!Service.IsValid())
 			{
-				Service = BuildService(TServiceTag<T>{});
+				Service = BuildService();
 				return Service;
 			}
 			return Service;
