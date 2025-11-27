@@ -6,8 +6,6 @@
 
 extern "C" {
 
-void test(const uint32_t *a);
-
 
 namespace banette {
 namespace ffi {

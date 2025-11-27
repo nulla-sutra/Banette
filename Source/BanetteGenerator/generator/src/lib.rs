@@ -4,7 +4,7 @@
 
 pub mod openapi;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn test(a: *const char) {
-    println!("{:?}", a);
-}
+// #[unsafe(no_mangle)]
+// pub extern "C" fn test(a: *const char) {
+//     println!("{:?}", a);
+// }

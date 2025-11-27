@@ -3,32 +3,40 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Banette/Core/Service.h"
+#include "Core/Service.h"
 
 namespace Banette::Pipeline
 {
 	using namespace Banette::Core;
 
 	template <CService T>
+	struct TServiceTag
+	{
+		using ServiceType = T;
+	};
+
+	template <CService T>
+	TSharedPtr<T> BuildService(TServiceTag<T>)
+	{
+		static_assert(sizeof(T) == 0,
+		              "Banette::Pipeline::GetServiceImpl(TServiceTag<T>) is not specialized "
+		              "for this service type T. Please provide an overload in some header.");
+		return nullptr;
+	}
+
+	template <CService T>
 	struct TServiceProvider
 	{
-		static inline TSharedPtr<T> Service;
-
-		static TSharedPtr<T> BuildService()
-		{
-			unimplemented();
-			return nullptr;
-		};
-
 		static TSharedPtr<T> GetService()
 		{
-			if (Service.IsValid())
+			static TSharedPtr<T> Service = nullptr;
+
+			if (!Service.IsValid())
 			{
+				Service = BuildService(TServiceTag<T>{});
 				return Service;
 			}
-
-			Service = TServiceProvider<T>::BuildService();
 			return Service;
-		};
+		}
 	};
 }

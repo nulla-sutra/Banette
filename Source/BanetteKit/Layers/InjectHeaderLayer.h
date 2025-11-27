@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Banette.h"
-#include "Http/HttpService.h"
+#include "BanetteTransport/Http/HttpService.h"
 #include "UE5Coro.h"
 
 namespace Banette::Kit
@@ -26,7 +26,7 @@ namespace Banette::Kit
 	/// FInjectHeaderLayer Layer({{TEXT("X-Auth"), TEXT("Token")}}, /* bOverrideExisting = */ true);
 	/// TSharedRef<FHttpService> WithHeaders = Layer.Wrap(Base);
 	/// @endcode
-	class BANETTEKIT_API FInjectHeaderLayer : public TLayer<FHttpService, FHttpService>
+	class FInjectHeaderLayer : public TLayer<FHttpService, FHttpService>
 	{
 	public:
 		/**
@@ -56,6 +56,8 @@ namespace Banette::Kit
 		{
 			return MakeShared<FInjectHeaderService>(Inner, Headers, bOverrideExisting);
 		}
+
+		virtual ~FInjectHeaderLayer() override = default;
 
 	private:
 		TMap<FString, FString> Headers;

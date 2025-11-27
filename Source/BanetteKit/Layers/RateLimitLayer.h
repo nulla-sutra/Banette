@@ -41,6 +41,8 @@ namespace Banette::Kit
 			return MakeShared<FRateLimitService>(Inner, Config);
 		}
 
+		virtual ~TRateLimitLayer() override = default;
+
 	private:
 		FRateLimitConfig Config;
 
