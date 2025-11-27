@@ -3,48 +3,18 @@
  */
 pub mod filter;
 pub mod loader;
+pub mod parser;
 
 use anyhow::anyhow;
 use filter::register_all_filters;
 use loader::load_openapi_spec;
+use parser::parse_include_headers;
 use std::ffi::{c_char, CStr};
 use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use tera::Tera;
-
-/// Parses a string containing multiple `#include` directives into a Vec<String>.
-///
-/// # Arguments
-/// * `input` - A string that may contain multiple `#include` directives concatenated together,
-///   e.g., `"#include \"a.h\";#include \"b.h\";"`.
-///
-/// # Returns
-/// A `Vec<String>` where each element is a complete `#include` directive.
-pub fn parse_include_headers(input: &str) -> Vec<String> {
-    if input.is_empty() {
-        return Vec::new();
-    }
-
-    input
-        .split("#include")
-        .filter_map(|part| {
-            let trimmed = part.trim();
-            if trimmed.is_empty() {
-                None
-            } else {
-                // Reconstruct the include directive
-                let mut header = format!("#include {}", trimmed);
-                // Ensure it ends with a semicolon if not already
-                if !header.ends_with(';') {
-                    header.push(';');
-                }
-                Some(header)
-            }
-        })
-        .collect()
-}
 
 #[cbindgen_macro::namespace("banette::ffi::generator::openapi")]
 #[unsafe(no_mangle)]
@@ -80,7 +50,13 @@ pub extern "C" fn generate(
             parse_include_headers(headers_str)
         };
 
-        generate_safe(openapi_path, output_dir, file_name, module_name, include_headers)
+        generate_safe(
+            openapi_path,
+            output_dir,
+            file_name,
+            module_name,
+            include_headers,
+        )
     })();
 
     if let Err(e) = result {
@@ -225,7 +201,7 @@ mod tests {
         // Test empty string
         assert_eq!(parse_include_headers(""), Vec::<String>::new());
 
-        // Test single include
+        // Test a single include
         assert_eq!(
             parse_include_headers("#include \"a.h\";"),
             vec!["#include \"a.h\";".to_string()]

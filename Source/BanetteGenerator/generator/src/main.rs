@@ -3,7 +3,8 @@
  */
 
 use clap::Parser;
-use generator::openapi::{generate_safe, parse_include_headers};
+use generator::openapi::generate_safe;
+use generator::openapi::parser::parse_include_headers;
 
 #[derive(Parser)]
 struct Args {
