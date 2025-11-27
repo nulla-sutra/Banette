@@ -15,7 +15,8 @@ namespace openapi {
 void generate(const char *openapi_path,
               const char *output_dir,
               const char *file_name,
-              const char *module_name);
+              const char *module_name,
+              const char *extra_headers);
 
 }  // namespace openapi
 }  // namespace generator
