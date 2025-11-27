@@ -16,5 +16,6 @@ class BANETTEGENERATOR_API UBanetteGeneratorLibrary : public UBlueprintFunctionL
 
 public:
 	UFUNCTION(BlueprintCallable)
-	static void GenerateOpenApi(FString OpenApiPath, FString OutputDir, FString FileName, FString ModuleName);
+	static void GenerateOpenApi(FString OpenApiPath, FString OutputDir, FString FileName, FString ModuleName,
+	                            FString ExtraHeaders);
 };

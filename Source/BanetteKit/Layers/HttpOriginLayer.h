@@ -137,7 +137,7 @@ namespace Banette::Kit
 				{
 					++PathStart;
 				}
-				FStringView NormalizedPath(RelativePath.GetCharArray().GetData() + PathStart, RelativePath.Len() - PathStart);
+				const FStringView NormalizedPath(RelativePath.GetCharArray().GetData() + PathStart, RelativePath.Len() - PathStart);
 
 				// Combine with a single slash
 				if (NormalizedPath.Len() == 0)
