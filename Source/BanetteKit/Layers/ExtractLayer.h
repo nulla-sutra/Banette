@@ -29,8 +29,8 @@ namespace Banette::Kit
 	struct TExtractable
 	{
 		static_assert(sizeof(ResponseT) == 0,
-			"TExtractable<T> is not specialized for this type. "
-			"You must provide a specialization with GetBytes and GetTypeKey methods.");
+		              "TExtractable<T> is not specialized for this type. "
+		              "You must provide a specialization with GetBytes and GetTypeKey methods.");
 
 		static const TArray<uint8>& GetBytes(const ResponseT& Response) = delete;
 		static FString GetTypeKey(const ResponseT& Response) = delete;
@@ -162,7 +162,7 @@ namespace Banette::Kit
 				TSharedPtr<void> ParsedContent = nullptr;
 
 				// Only attempt extraction if we have bytes and a registered extractor.
-				// If either is missing, ParsedContent remains nullptr but the result is still valid.
+				// If either is missing, ParsedContent remains nullptr, but the result is still valid.
 				if (Bytes.Num() > 0)
 				{
 					if (const FExtractor* Found = Extractors->Find(TypeKey))
