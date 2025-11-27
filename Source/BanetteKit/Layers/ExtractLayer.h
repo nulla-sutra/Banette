@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Banette.h"
+#include "BanetteTransport/Http/HttpService.h"
 
 namespace Banette::Kit
 {
@@ -131,3 +132,18 @@ namespace Banette::Kit
 		};
 	};
 }
+
+
+template <>
+struct Banette::Kit::TExtractable<Banette::Transport::Http::FHttpResponse>
+{
+	static const TArray<uint8>& GetBytes(const Transport::Http::FHttpResponse& Response)
+	{
+		return Response.Body;
+	};
+
+	static FString GetTypeKey(const Transport::Http::FHttpResponse& Response)
+	{
+		return Response.ContentType;
+	}
+};

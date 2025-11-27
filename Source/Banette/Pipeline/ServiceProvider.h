@@ -8,11 +8,11 @@
 namespace Banette::Pipeline
 {
 	using namespace Banette::Core;
-	
-	template <CService T, typename ProviderT = void>
+
+	template <CService T>
 	struct TServiceProvider
 	{
-		static inline TSharedPtr<T> Service = nullptr;
+		static inline TSharedPtr<T> Service;
 
 		static TSharedPtr<T> BuildService()
 		{
@@ -27,15 +27,7 @@ namespace Banette::Pipeline
 				return Service;
 			}
 
-			if constexpr (!std::is_same_v<ProviderT, void>)
-			{
-				Service = ProviderT::BuildService();
-			}
-			else
-			{
-				Service = BuildService();
-			}
-
+			Service = TServiceProvider<T>::BuildService();
 			return Service;
 		};
 	};

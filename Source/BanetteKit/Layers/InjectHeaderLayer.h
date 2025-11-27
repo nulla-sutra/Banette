@@ -12,52 +12,35 @@ namespace Banette::Kit
 	using namespace Banette::Core;
 	using namespace Banette::Transport::Http;
 
-	/**
-	 * Layer that injects HTTP headers into outgoing requests.
-	 *
-	 * This layer wraps an FHttpService and merges configured headers into each
-	 * request before forwarding it to the inner service.
-	 *
-	 * Usage example:
-	 * @code
-	 * using namespace Banette::Transport::Http;
-	 * using namespace Banette::Kit;
-	 *
-	 * TSharedRef<FHttpService> Base = MakeShared<FHttpService>();
-	 * FInjectHeaderLayer Layer({{TEXT("X-Auth"), TEXT("Token")}}, /*bOverrideExisting=*/true);
-	 * TSharedRef<FHttpService> WithHeaders = Layer.Wrap(Base);
-	 * @endcode
-	 */
+	/// Layer that injects HTTP headers into outgoing requests.
+	///
+	/// This layer wraps an FHttpService and merges configured headers into each
+	/// request before forwarding it to the inner service.
+	///
+	/// Usage example:
+	/// @code
+	/// using namespace Banette::Transport::Http;
+	/// using namespace Banette::Kit;
+	///
+	/// TSharedRef<FHttpService> Base = MakeShared<FHttpService>();
+	/// FInjectHeaderLayer Layer({{TEXT("X-Auth"), TEXT("Token")}}, /* bOverrideExisting = */ true);
+	/// TSharedRef<FHttpService> WithHeaders = Layer.Wrap(Base);
+	/// @endcode
 	class BANETTEKIT_API FInjectHeaderLayer : public TLayer<FHttpService, FHttpService>
 	{
 	public:
 		/**
-		 * Construct an inject header layer.
+		 * Construct a header-injection layer.
 		 * @param InHeaders       Headers to inject into each request.
 		 * @param bInOverrideExisting If true, injected headers override existing request headers.
 		 *                            If false, headers are only added if not already present.
 		 */
 		explicit FInjectHeaderLayer(
 			const TMap<FString, FString>& InHeaders = {},
-			bool bInOverrideExisting = false)
+			const bool bInOverrideExisting = false)
 			: Headers(InHeaders)
-			, bOverrideExisting(bInOverrideExisting)
+			  , bOverrideExisting(bInOverrideExisting)
 		{
-		}
-
-		/**
-		 * Construct an inject header layer with a single header.
-		 * @param Name            Header name.
-		 * @param Value           Header value.
-		 * @param bInOverrideExisting If true, injected header overrides existing request headers.
-		 */
-		FInjectHeaderLayer(
-			const FString& Name,
-			const FString& Value,
-			bool bInOverrideExisting = false)
-			: bOverrideExisting(bInOverrideExisting)
-		{
-			Headers.Add(Name, Value);
 		}
 
 		/**
@@ -85,12 +68,12 @@ namespace Banette::Kit
 		{
 		public:
 			FInjectHeaderService(
-				TSharedRef<FHttpService> InInner,
+				const TSharedRef<FHttpService>& InInner,
 				const TMap<FString, FString>& InHeaders,
-				bool bInOverrideExisting)
+				const bool bInOverrideExisting)
 				: InnerService(InInner)
-				, Headers(InHeaders)
-				, bOverrideExisting(bInOverrideExisting)
+				  , Headers(InHeaders)
+				  , bOverrideExisting(bInOverrideExisting)
 			{
 			}
 

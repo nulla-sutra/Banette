@@ -11,20 +11,6 @@ using namespace Banette::Transport::Http;
 using namespace Banette::Pipeline;
 using namespace Banette::Kit;
 
-template <>
-struct Banette::Kit::TExtractable<FHttpResponse>
-{
-	static const TArray<uint8>& GetBytes(const FHttpResponse& Response)
-	{
-		return Response.Body;
-	};
-
-	static FString GetTypeKey(const FHttpResponse& Response)
-	{
-		return Response.ContentType;
-	}
-};
-
 FVoidCoroutine UBanetteTestLibrary::Test(FJsonObjectWrapper& Json, FLatentActionInfo LatentInfo)
 {
 	const auto HttpService = MakeShared<FHttpService>();
