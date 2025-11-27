@@ -22,7 +22,7 @@ use tera::Tera;
 ///
 /// # Returns
 /// A `Vec<String>` where each element is a complete `#include` directive.
-fn parse_include_headers(input: &str) -> Vec<String> {
+pub fn parse_include_headers(input: &str) -> Vec<String> {
     if input.is_empty() {
         return Vec::new();
     }

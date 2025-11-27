@@ -3,7 +3,7 @@
  */
 
 use clap::Parser;
-use generator::openapi::generate_safe;
+use generator::openapi::{generate_safe, parse_include_headers};
 
 #[derive(Parser)]
 struct Args {
@@ -22,26 +22,7 @@ struct Args {
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
-    // Parse extra_headers if provided
-    let include_headers: Vec<String> = if args.extra_headers.is_empty() {
-        Vec::new()
-    } else {
-        args.extra_headers
-            .split("#include")
-            .filter_map(|part| {
-                let trimmed = part.trim();
-                if trimmed.is_empty() {
-                    None
-                } else {
-                    let mut header = format!("#include {}", trimmed);
-                    if !header.ends_with(';') {
-                        header.push(';');
-                    }
-                    Some(header)
-                }
-            })
-            .collect()
-    };
+    let include_headers = parse_include_headers(&args.extra_headers);
 
     generate_safe(
         args.path.as_str(),
