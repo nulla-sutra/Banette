@@ -201,45 +201,78 @@ mod tests {
         // Test empty string
         assert_eq!(parse_include_headers(""), Vec::<String>::new());
 
-        // Test a single include
+        // Test a single include (full format)
         assert_eq!(
             parse_include_headers("#include \"a.h\";"),
-            vec!["#include \"a.h\";".to_string()]
+            vec!["#include \"a.h\"".to_string()]
         );
 
-        // Test multiple includes
+        // Test multiple includes (full format)
         assert_eq!(
             parse_include_headers("#include \"a.h\";#include \"b.h\";"),
             vec![
-                "#include \"a.h\";".to_string(),
-                "#include \"b.h\";".to_string()
+                "#include \"a.h\"".to_string(),
+                "#include \"b.h\"".to_string()
             ]
         );
 
-        // Test includes without trailing semicolons (should add them)
+        // Test includes without trailing semicolons (full format)
         assert_eq!(
             parse_include_headers("#include \"a.h\"#include \"b.h\""),
             vec![
-                "#include \"a.h\";".to_string(),
-                "#include \"b.h\";".to_string()
+                "#include \"a.h\"".to_string(),
+                "#include \"b.h\"".to_string()
             ]
         );
 
-        // Test with angle brackets
+        // Test with angle brackets (full format)
         assert_eq!(
             parse_include_headers("#include <vector>;#include <string>;"),
             vec![
-                "#include <vector>;".to_string(),
-                "#include <string>;".to_string()
+                "#include <vector>".to_string(),
+                "#include <string>".to_string()
             ]
         );
 
-        // Test with extra whitespace
+        // Test with extra whitespace (full format)
         assert_eq!(
             parse_include_headers("  #include \"a.h\";  #include \"b.h\";  "),
             vec![
-                "#include \"a.h\";".to_string(),
-                "#include \"b.h\";".to_string()
+                "#include \"a.h\"".to_string(),
+                "#include \"b.h\"".to_string()
+            ]
+        );
+
+        // Test simplified format: a.h;b.h
+        assert_eq!(
+            parse_include_headers("a.h;b.h"),
+            vec![
+                "#include \"a.h\"".to_string(),
+                "#include \"b.h\"".to_string()
+            ]
+        );
+
+        // Test simplified format: single header
+        assert_eq!(
+            parse_include_headers("Custom.h"),
+            vec!["#include \"Custom.h\"".to_string()]
+        );
+
+        // Test simplified format with trailing semicolon
+        assert_eq!(
+            parse_include_headers("a.h;b.h;"),
+            vec![
+                "#include \"a.h\"".to_string(),
+                "#include \"b.h\"".to_string()
+            ]
+        );
+
+        // Test simplified format with whitespace
+        assert_eq!(
+            parse_include_headers("  a.h ; b.h  "),
+            vec![
+                "#include \"a.h\"".to_string(),
+                "#include \"b.h\"".to_string()
             ]
         );
     }
