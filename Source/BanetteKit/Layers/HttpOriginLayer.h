@@ -123,27 +123,31 @@ namespace Banette::Kit
 			 */
 			static FString CombineUrl(const FString& BaseOrigin, const FString& RelativePath)
 			{
-				// Remove trailing slash from origin
-				FString NormalizedOrigin = BaseOrigin;
-				while (NormalizedOrigin.EndsWith(TEXT("/")))
+				// Find where trailing slashes end in origin (trim from right)
+				int32 OriginEnd = BaseOrigin.Len();
+				while (OriginEnd > 0 && BaseOrigin[OriginEnd - 1] == TEXT('/'))
 				{
-					NormalizedOrigin.RemoveFromEnd(TEXT("/"));
+					--OriginEnd;
 				}
+				FStringView NormalizedOrigin(BaseOrigin.GetCharArray().GetData(), OriginEnd);
 
-				// Remove leading slash from path
-				FString NormalizedPath = RelativePath;
-				while (NormalizedPath.StartsWith(TEXT("/")))
+				// Find where leading slashes end in path (trim from left)
+				int32 PathStart = 0;
+				while (PathStart < RelativePath.Len() && RelativePath[PathStart] == TEXT('/'))
 				{
-					NormalizedPath.RemoveFromStart(TEXT("/"));
+					++PathStart;
 				}
+				FStringView NormalizedPath(RelativePath.GetCharArray().GetData() + PathStart, RelativePath.Len() - PathStart);
 
 				// Combine with a single slash
-				if (NormalizedPath.IsEmpty())
+				if (NormalizedPath.Len() == 0)
 				{
-					return NormalizedOrigin;
+					return FString(NormalizedOrigin);
 				}
 
-				return NormalizedOrigin + TEXT("/") + NormalizedPath;
+				return FString::Printf(TEXT("%.*s/%.*s"),
+					NormalizedOrigin.Len(), NormalizedOrigin.GetData(),
+					NormalizedPath.Len(), NormalizedPath.GetData());
 			}
 		};
 	};
