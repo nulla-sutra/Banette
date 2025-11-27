@@ -59,6 +59,14 @@ namespace Banette::Kit
 	template <typename BaseResponseT>
 	struct TExtractedResponse : TTuple<BaseResponseT, TSharedPtr<void>>
 	{
+		using Super = TTuple<BaseResponseT, TSharedPtr<void>>;
+		using Super::Super;
+
+		TExtractedResponse(BaseResponseT InBase, TSharedPtr<void> InContent)
+			: Super(MoveTemp(InBase), MoveTemp(InContent))
+		{
+		}
+
 		const BaseResponseT& GetBase() const { return this->template Get<0>(); }
 
 		template <typename T>
@@ -174,7 +182,7 @@ namespace Banette::Kit
 
 				// Always return a valid result when the inner call succeeded.
 				// Callers must check GetContent<T>() for nullptr.
-				co_return MakeValue(MakeTuple(MoveTemp(BaseResponse), MoveTemp(ParsedContent)));
+				co_return MakeValue(FWrapperResponse(MoveTemp(BaseResponse), MoveTemp(ParsedContent)));
 			}
 
 		private:
