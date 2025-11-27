@@ -14,6 +14,38 @@ use std::io::Write;
 use std::path::Path;
 use tera::Tera;
 
+/// Parses a string containing multiple `#include` directives into a Vec<String>.
+///
+/// # Arguments
+/// * `input` - A string that may contain multiple `#include` directives concatenated together,
+///   e.g., `"#include \"a.h\";#include \"b.h\";"`.
+///
+/// # Returns
+/// A `Vec<String>` where each element is a complete `#include` directive.
+fn parse_include_headers(input: &str) -> Vec<String> {
+    if input.is_empty() {
+        return Vec::new();
+    }
+
+    input
+        .split("#include")
+        .filter_map(|part| {
+            let trimmed = part.trim();
+            if trimmed.is_empty() {
+                None
+            } else {
+                // Reconstruct the include directive
+                let mut header = format!("#include {}", trimmed);
+                // Ensure it ends with a semicolon if not already
+                if !header.ends_with(';') {
+                    header.push(';');
+                }
+                Some(header)
+            }
+        })
+        .collect()
+}
+
 #[cbindgen_macro::namespace("banette::ffi::generator::openapi")]
 #[unsafe(no_mangle)]
 pub extern "C" fn generate(
@@ -21,6 +53,7 @@ pub extern "C" fn generate(
     output_dir: *const c_char,
     file_name: *const c_char,
     module_name: *const c_char,
+    extra_headers: *const c_char,
 ) {
     let result = (|| -> anyhow::Result<()> {
         let convert_arg = |ptr: *const c_char, param_name: &str| -> anyhow::Result<&str> {
@@ -38,7 +71,16 @@ pub extern "C" fn generate(
         let file_name = convert_arg(file_name, "file_name")?;
         let module_name = convert_arg(module_name, "module_name")?;
 
-        generate_safe(openapi_path, output_dir, file_name, module_name)
+        // Parse extra_headers: can be null (empty) or a C string with concatenated includes
+        let include_headers = if extra_headers.is_null() {
+            Vec::new()
+        } else {
+            // SAFETY: CStr::from_ptr is safe because we check for null above.
+            let headers_str = convert_arg(extra_headers, "extra_headers")?;
+            parse_include_headers(headers_str)
+        };
+
+        generate_safe(openapi_path, output_dir, file_name, module_name, include_headers)
     })();
 
     if let Err(e) = result {
@@ -56,6 +98,7 @@ pub extern "C" fn generate(
 /// - `output_dir`: A string slice specifying the directory where the generated file should be saved.
 /// - `file_name`: The desired name for the generated file.
 /// - `module_name`: The module name to be used in the rendered output.
+/// - `include_headers`: A vector of additional `#include` directives to inject into the generated header.
 ///
 /// # Returns
 /// - `anyhow::Result<()>`: Returns `Ok(())` if the operation completes successfully, or an error
@@ -76,7 +119,7 @@ pub extern "C" fn generate(
 ///    - In debug mode, it reads the template file from the filesystem.
 ///    - In release mode, it embeds the template as a raw string during compilation.
 /// 6. Creates a rendering context using the deserialized data from the OpenAPI spec and additional inputs:
-///    - Inserts `module_name` and `file_name` into the context for further customization in the template.
+///    - Inserts `module_name`, `file_name`, and `include_headers` into the context for further customization in the template.
 /// 7. Uses the Tera engine to render the template into a file format.
 ///
 /// # Side Effects
@@ -100,6 +143,7 @@ pub extern "C" fn generate(
 ///         "output/directory",
 ///         "generated_file.h",
 ///         "MyModule",
+///         vec!["#include \"custom.h\";".to_string()],
 ///     )?;
 ///     Ok(())
 /// }
@@ -109,11 +153,13 @@ pub extern "C" fn generate(
 /// - The function reads the OpenAPI spec from `path/to/openapi.yaml`.
 /// - Generates a file named `generated_file.h` in the `output/directory`.
 /// - Writes the rendered file using the specified `MyModule` name in the template.
+/// - Injects the additional custom header include into the generated output.
 pub fn generate_safe(
     path: &str,
     output_dir: &str,
     file_name: &str,
     module_name: &str,
+    include_headers: Vec<String>,
 ) -> anyhow::Result<()> {
     let spec = load_openapi_spec(path)?;
     let mut tera = Tera::default();
@@ -146,6 +192,7 @@ pub fn generate_safe(
     let mut context = tera::Context::from_serialize(&spec)?;
     context.insert("module_name", &module_name);
     context.insert("file_name", &file_name_base);
+    context.insert("include_headers", &include_headers);
 
     let rendered = tera.render("open_api_template", &context)?;
 
@@ -168,7 +215,56 @@ mod tests {
             "./target/test",
             "AnxApi.h",
             "ANXNET_API",
+            vec![],
         )
             .unwrap();
+    }
+
+    #[test]
+    fn test_parse_include_headers() {
+        // Test empty string
+        assert_eq!(parse_include_headers(""), Vec::<String>::new());
+
+        // Test single include
+        assert_eq!(
+            parse_include_headers("#include \"a.h\";"),
+            vec!["#include \"a.h\";".to_string()]
+        );
+
+        // Test multiple includes
+        assert_eq!(
+            parse_include_headers("#include \"a.h\";#include \"b.h\";"),
+            vec![
+                "#include \"a.h\";".to_string(),
+                "#include \"b.h\";".to_string()
+            ]
+        );
+
+        // Test includes without trailing semicolons (should add them)
+        assert_eq!(
+            parse_include_headers("#include \"a.h\"#include \"b.h\""),
+            vec![
+                "#include \"a.h\";".to_string(),
+                "#include \"b.h\";".to_string()
+            ]
+        );
+
+        // Test with angle brackets
+        assert_eq!(
+            parse_include_headers("#include <vector>;#include <string>;"),
+            vec![
+                "#include <vector>;".to_string(),
+                "#include <string>;".to_string()
+            ]
+        );
+
+        // Test with extra whitespace
+        assert_eq!(
+            parse_include_headers("  #include \"a.h\";  #include \"b.h\";  "),
+            vec![
+                "#include \"a.h\";".to_string(),
+                "#include \"b.h\";".to_string()
+            ]
+        );
     }
 }
