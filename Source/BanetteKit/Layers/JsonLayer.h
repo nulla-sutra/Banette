@@ -149,7 +149,7 @@ namespace Banette::Kit
 					return nullptr;
 				}
 
-				// Convert bytes to string with explicit length to avoid buffer overheads
+				// Convert bytes to string with explicit length to avoid buffer overreads
 				// Ensure null-termination by creating an ANSICHAR array with explicit null terminator
 				TArray<ANSICHAR> NullTerminatedBytes;
 				NullTerminatedBytes.SetNumUninitialized(Bytes.Num() + 1);
@@ -160,10 +160,29 @@ namespace Banette::Kit
 					StringCast<TCHAR>(NullTerminatedBytes.GetData()).Get()
 				);
 
-				// Parse JSON
-				const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
-				TSharedPtr<FJsonValue> JsonValue;
+				// Check if the JSON string starts with '[' (array) or '{' (object)
+				const FString TrimmedJson = JsonString.TrimStartAndEnd();
+				if (TrimmedJson.IsEmpty())
+				{
+					return nullptr;
+				}
 
+				const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+
+				// Try to parse as array if it starts with '['
+				if (TrimmedJson.StartsWith(TEXT("[")))
+				{
+					TArray<TSharedPtr<FJsonValue>> JsonArray;
+					if (FJsonSerializer::Deserialize(Reader, JsonArray))
+					{
+						// Wrap the array in an FJsonValueArray with correct Type
+						return MakeShared<FJsonValueArray>(JsonArray);
+					}
+					return nullptr;
+				}
+
+				// Parse as object or other JSON value
+				TSharedPtr<FJsonValue> JsonValue;
 				if (FJsonSerializer::Deserialize(Reader, JsonValue))
 				{
 					return JsonValue;
