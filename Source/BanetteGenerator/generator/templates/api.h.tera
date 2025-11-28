@@ -7,7 +7,6 @@
 #include "UE5Coro.h"
 #include "BanetteKit/Layers/JsonLayer.h"
 #include "BanetteTransport/Http/HttpService.h"
-#include "BanetteTransport/Json/JsonConverter.h"
 {%- if include_headers -%}
 {%- for header in include_headers %}
 {{ header }}
@@ -46,7 +45,6 @@ using namespace Banette::Core;
 using namespace Banette::Pipeline;
 using namespace Banette::Kit;
 using namespace Banette::Transport::Http;
-using namespace Banette::Transport::Json;
 
 using FAnxHttpApiService = TService<FHttpRequest, FHttpJsonResponse>;
 
@@ -79,13 +77,14 @@ public:
             
         bool& bSuccess, FLatentActionInfo LatentInfo)
     {
-        if (const auto* Resp = (co_await TServiceProvider<F{{ file_name }}Service>::GetService()->Call(
-            FHttpRequest({{ path | http_request_params(method=method, parameters=operation.parameters | default(value=[])) }}))).TryGetValue())
+        const auto Result = co_await TServiceProvider<F{{ file_name }}Service>::GetService()->Call(
+                FHttpRequest({{ path | http_request_params(method=method, parameters=operation.parameters | default(value=[])) }}));
+        if (const auto* Resp = Result.TryGetValue())
         {
             bSuccess = true;
             bSuccess &= Resp->bSucceeded;
             {%- if operation.responses  %}
-            bSuccess &= JsonToCpp(Resp->BodyToJson(), ResponseBody);
+            bSuccess &= Resp->GetContent(ResponseBody);
             {%- endif %}
         }
         co_return;

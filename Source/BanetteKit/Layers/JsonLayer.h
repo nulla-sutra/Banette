@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Banette.h"
+#include "JsonObjectConverter.h"
 #include "BanetteTransport/Http/HttpService.h"
 #include "Dom/JsonValue.h"
 #include "Serialization/JsonReader.h"
@@ -18,14 +19,14 @@ namespace Banette::Kit
 	/// Container for JSON body data, holding both raw bytes and parsed JSON.
 	///
 	/// The raw bytes are always preserved, even if JSON parsing fails.
-	/// The JsonValue will be null if the body could not be parsed as valid JSON.
+	/// The JsonString will be empty if the body could not be parsed as valid JSON.
 	struct FJsonBody
 	{
 		/// Original raw response bytes.
 		TArray<uint8> RawBytes;
 
-		/// Parsed JSON value. May be null if parsing failed.
-		TSharedPtr<FJsonValue> JsonValue;
+		/// Parsed JSON String. May be empty if parsing failed.
+		FString JsonString;
 	};
 
 	/// HTTP response with JSON body.
@@ -51,7 +52,17 @@ namespace Banette::Kit
 		/// Whether the engine reported a successful connection.
 		bool bSucceeded = false;
 
-		TSharedPtr<FJsonValue> BodyToJson() const { return Body.JsonValue; }
+		template <typename T>
+		bool GetContent(TArray<T>& OutArr) const
+		{
+			return FJsonObjectConverter::JsonArrayStringToUStruct(Body.JsonString, &OutArr);
+		}
+
+		template <typename T>
+		bool GetContent(T& OutStruct) const
+		{
+			return FJsonObjectConverter::JsonObjectStringToUStruct(Body.JsonString, &OutStruct);
+		}
 	};
 
 	/// Service type that returns HTTP responses with JSON-parsed bodies.
@@ -132,7 +143,7 @@ namespace Banette::Kit
 				JsonResponse.Body.RawBytes = HttpResponse.Body;
 
 				// Attempt to parse the body as JSON
-				JsonResponse.Body.JsonValue = ParseJsonFromBytes(HttpResponse.Body);
+				JsonResponse.Body.JsonString = ParseJsonFromBytes(HttpResponse.Body);
 
 				co_return MakeValue(JsonResponse);
 			}
@@ -142,54 +153,18 @@ namespace Banette::Kit
 
 			/// Attempts to parse JSON from raw bytes.
 			/// Returns nullptr if parsing fails.
-			static TSharedPtr<FJsonValue> ParseJsonFromBytes(const TArray<uint8>& Bytes)
+			static FString ParseJsonFromBytes(const TArray<uint8>& Bytes)
 			{
 				if (Bytes.Num() == 0)
 				{
-					return nullptr;
+					return "";
 				}
 
-				// Convert bytes to string with explicit length to avoid buffer overreads
-				// Ensure null-termination by creating an ANSICHAR array with explicit null terminator
-				TArray<ANSICHAR> NullTerminatedBytes;
-				NullTerminatedBytes.SetNumUninitialized(Bytes.Num() + 1);
-				FMemory::Memcpy(NullTerminatedBytes.GetData(), Bytes.GetData(), Bytes.Num());
-				NullTerminatedBytes[Bytes.Num()] = '\0';
-
-				const FString JsonString = FString(
-					StringCast<TCHAR>(NullTerminatedBytes.GetData()).Get()
+				const auto Utf8String = StringCast<TCHAR>(
+					reinterpret_cast<const ANSICHAR*>(Bytes.GetData()),
+					Bytes.Num()
 				);
-
-				// Check if the JSON string starts with '[' (array) or '{' (object)
-				const FString TrimmedJson = JsonString.TrimStartAndEnd();
-				if (TrimmedJson.IsEmpty())
-				{
-					return nullptr;
-				}
-
-				const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
-
-				// Try to parse as array if it starts with '['
-				if (TrimmedJson.StartsWith(TEXT("[")))
-				{
-					TArray<TSharedPtr<FJsonValue>> JsonArray;
-					if (FJsonSerializer::Deserialize(Reader, JsonArray))
-					{
-						// Wrap the array in an FJsonValueArray with correct Type
-						return MakeShared<FJsonValueArray>(JsonArray);
-					}
-					return nullptr;
-				}
-
-				// Parse as object or other JSON value
-				TSharedPtr<FJsonValue> JsonValue;
-				if (FJsonSerializer::Deserialize(Reader, JsonValue))
-				{
-					return JsonValue;
-				}
-
-				// Parsing failed; return nullptr
-				return nullptr;
+				return FString(Utf8String.Length(), Utf8String.Get());
 			}
 		};
 	};
