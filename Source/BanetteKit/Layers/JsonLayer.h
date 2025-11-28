@@ -169,15 +169,34 @@ namespace Banette::Kit
 		};
 	};
 
+	/// Converts a JSON string to UTF-8 encoded bytes.
+	static TArray<uint8> JsonStringToBytes(const FString& JsonString)
+	{
+		const FTCHARToUTF8 Utf8Converter(*JsonString);
+		TArray<uint8> Bytes;
+		Bytes.Append(reinterpret_cast<const uint8*>(Utf8Converter.Get()), Utf8Converter.Length());
+		return Bytes;
+	}
+
 	template <typename T>
 	static TArray<uint8> ToBytes(const T& Payload)
 	{
+		FString JsonString;
+		if (FJsonObjectConverter::UStructToJsonObjectString(Payload, JsonString))
+		{
+			return JsonStringToBytes(JsonString);
+		}
 		return {};
 	}
-	
+
 	template <typename T>
 	static TArray<uint8> ToBytes(const TArray<T>& Payload)
 	{
+		FString JsonString;
+		if (FJsonObjectConverter::UStructToJsonArrayOfStructsString(Payload, JsonString))
+		{
+			return JsonStringToBytes(JsonString);
+		}
 		return {};
 	}
 }
