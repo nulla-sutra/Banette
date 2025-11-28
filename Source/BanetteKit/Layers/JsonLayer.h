@@ -172,12 +172,28 @@ namespace Banette::Kit
 	template <typename T>
 	static TArray<uint8> ToBytes(const T& Payload)
 	{
+		FString JsonString;
+		if (FJsonObjectConverter::UStructToJsonObjectString(Payload, JsonString))
+		{
+			const FTCHARToUTF8 Utf8Converter(*JsonString);
+			TArray<uint8> Bytes;
+			Bytes.Append(reinterpret_cast<const uint8*>(Utf8Converter.Get()), Utf8Converter.Length());
+			return Bytes;
+		}
 		return {};
 	}
-	
+
 	template <typename T>
 	static TArray<uint8> ToBytes(const TArray<T>& Payload)
 	{
+		FString JsonString;
+		if (FJsonObjectConverter::UStructToJsonArrayOfStructsString(Payload, JsonString))
+		{
+			const FTCHARToUTF8 Utf8Converter(*JsonString);
+			TArray<uint8> Bytes;
+			Bytes.Append(reinterpret_cast<const uint8*>(Utf8Converter.Get()), Utf8Converter.Length());
+			return Bytes;
+		}
 		return {};
 	}
 }
