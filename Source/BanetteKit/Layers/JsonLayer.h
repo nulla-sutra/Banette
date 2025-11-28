@@ -50,6 +50,8 @@ namespace Banette::Kit
 
 		/// Whether the engine reported a successful connection.
 		bool bSucceeded = false;
+
+		TSharedPtr<FJsonValue> BodyToJson() const { return Body.JsonValue; }
 	};
 
 	/// Service type that returns HTTP responses with JSON-parsed bodies.
@@ -132,7 +134,7 @@ namespace Banette::Kit
 				// Attempt to parse the body as JSON
 				JsonResponse.Body.JsonValue = ParseJsonFromBytes(HttpResponse.Body);
 
-				co_return JsonResponse;
+				co_return MakeValue(JsonResponse);
 			}
 
 		private:
@@ -147,7 +149,7 @@ namespace Banette::Kit
 					return nullptr;
 				}
 
-				// Convert bytes to string with explicit length to avoid buffer overreads
+				// Convert bytes to string with explicit length to avoid buffer overheads
 				// Ensure null-termination by creating an ANSICHAR array with explicit null terminator
 				TArray<ANSICHAR> NullTerminatedBytes;
 				NullTerminatedBytes.SetNumUninitialized(Bytes.Num() + 1);
@@ -159,7 +161,7 @@ namespace Banette::Kit
 				);
 
 				// Parse JSON
-				TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+				const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
 				TSharedPtr<FJsonValue> JsonValue;
 
 				if (FJsonSerializer::Deserialize(Reader, JsonValue))

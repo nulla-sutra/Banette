@@ -42,22 +42,22 @@ namespace Banette::Transport::Http
 	struct BANETTETRANSPORT_API FHttpRequest
 	{
 		// Absolute URL to call. Example: https://example.com/api
-		FString Url;
+		mutable FString Url;
 
 		// Verb to use. Default: GET
-		EHttpMethod Method = EHttpMethod::Get;
+		mutable EHttpMethod Method = EHttpMethod::Get;
 
 		// Optional request headers. Keys are case-insensitive by HTTP standard.
-		TMap<FString, FString> Headers;
+		mutable TMap<FString, FString> Headers;
 
 		// Optional Content-Type. If set and not already provided in Headers, it will be added.
-		FString ContentType;
+		mutable FString ContentType;
 
 		// Optional request body. If empty, nobody is sent.
-		TArray<uint8> Body;
+		mutable TArray<uint8> Body;
 
 		// Timeout in seconds. <= 0 means use engine default.
-		float TimeoutSeconds = 0.f;
+		mutable float TimeoutSeconds = 0.f;
 	};
 
 	// Response data for HTTP calls.

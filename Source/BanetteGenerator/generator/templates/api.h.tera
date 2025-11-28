@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "StructUtils/InstancedStruct.h"
 #include "UE5Coro.h"
-#include "BanetteKit/Layers/ExtractLayer.h"
+#include "BanetteKit/Layers/JsonLayer.h"
 #include "BanetteTransport/Http/HttpService.h"
 #include "BanetteTransport/Json/JsonConverter.h"
 {%- if include_headers -%}
@@ -48,7 +48,7 @@ using namespace Banette::Kit;
 using namespace Banette::Transport::Http;
 using namespace Banette::Transport::Json;
 
-using F{{ file_name }}Service = TService<FHttpRequest, TExtractedResponse<FHttpResponse>>;
+using FAnxHttpApiService = TService<FHttpRequest, FHttpJsonResponse>;
 
 UCLASS()
 class {%- if module_name %} {{ module_name }} {% else %} {% endif -%}U{{ file_name }}Library : public UBlueprintFunctionLibrary
@@ -83,9 +83,9 @@ public:
             FHttpRequest({{ path | http_request_params(method=method, parameters=operation.parameters | default(value=[])) }}))).TryGetValue())
         {
             bSuccess = true;
-            bSuccess &= Resp->GetBase().bSucceeded;
+            bSuccess &= Resp->bSucceeded;
             {%- if operation.responses  %}
-            bSuccess &= JsonToCpp(Resp->GetContent<FJsonValue>(), ResponseBody);
+            bSuccess &= JsonToCpp(Resp->BodyToJson(), ResponseBody);
             {%- endif %}
         }
         co_return;
