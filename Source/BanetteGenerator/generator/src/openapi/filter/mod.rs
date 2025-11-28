@@ -2,6 +2,7 @@
  * Copyright 2019-Present tarnishablec. All Rights Reserved.
  */
 
+pub mod http_request_builder;
 pub mod http_request_params;
 pub mod is_required;
 pub mod path_to_func_name;
@@ -34,6 +35,10 @@ pub fn register_all_filters(tera: &mut Tera) {
     tera.register_filter(
         "http_request_params",
         http_request_params::http_request_params_filter,
+    );
+    tera.register_filter(
+        "http_request_builder",
+        http_request_builder::http_request_builder_filter,
     );
 }
 
