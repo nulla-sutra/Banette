@@ -3,7 +3,6 @@
 
 #include "BanetteTestLibrary.h"
 #include "BanetteKit/Layers/RetryLayer.h"
-#include "BanetteKit/Layers/ExtractLayer.h"
 #include "BanetteTransport/Http/HttpService.h"
 #include "Dom/JsonObject.h"
 
@@ -15,43 +14,6 @@ FVoidCoroutine UBanetteTestLibrary::Test(FJsonObjectWrapper& Json, FLatentAction
 {
 	const auto HttpService = MakeShared<FHttpService>();
 
-	TExtractLayer<FHttpService> ExtractLayer;
-
-	ExtractLayer.Register(
-		"application/json",
-		[](const TArray<uint8>& Bytes)
-		{
-			const FString JsonString = FString(
-				StringCast<TCHAR>(reinterpret_cast<const char*>(Bytes.GetData())).Get()
-			);
-
-			TSharedPtr<FJsonValue> OutJson;
-			const TSharedRef<TJsonReader<>> Reader =
-				TJsonReaderFactory<>::Create(JsonString);
-
-			UE_LOG(LogTemp, Warning, TEXT("JSON: [%s]"), *JsonString);
-
-			FJsonSerializer::Deserialize(Reader, OutJson);
-			
-			return OutJson;
-		});
-
-	ExtractLayer.Register(
-		"text/plain",
-		[](const TArray<uint8>& Bytes)
-		{
-			if (Bytes.Num() == 0)
-			{
-				return MakeShared<FString>();
-			}
-
-			const FString Str = FString(
-				StringCast<TCHAR>(reinterpret_cast<const char*>(Bytes.GetData())).Get()
-			);
-			return MakeShared<FString>(Str);
-		}
-	);
-
 	const TRetryLayer<FHttpService> RetryLayer({
 		.MaxAttempts = 5,
 		.DelayBetweenRetries = 0.5f,
@@ -60,7 +22,6 @@ FVoidCoroutine UBanetteTestLibrary::Test(FJsonObjectWrapper& Json, FLatentAction
 	const auto WrappedService =
 		TServiceBuilder<>::New(HttpService)
 		.Layer(RetryLayer)
-		.Layer(ExtractLayer)
 		.Build();
 
 	FHttpRequest Request;
@@ -70,12 +31,6 @@ FVoidCoroutine UBanetteTestLibrary::Test(FJsonObjectWrapper& Json, FLatentAction
 	if (auto Result = co_await WrappedService->Call(Request); Result.IsValid())
 	{
 		const auto& Response = Result.GetValue();
-		const auto JsonContent = Response.GetContent<FJsonObject>();
-
-		if (JsonContent.IsValid())
-		{
-			Json.JsonObject = JsonContent;
-		}
 	}
 	else
 	{
