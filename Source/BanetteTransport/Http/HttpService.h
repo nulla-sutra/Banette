@@ -38,49 +38,45 @@ namespace Banette::Transport::Http
 		Head
 	};
 
-// Macro to generate builder pattern methods for struct members
-#define BANETTE_WITH_MEMBER(StructType, MemberName, ParamType) \
-	StructType& With_##MemberName(ParamType In##MemberName) \
+// Helper macro to handle commas in macro arguments
+#define BANETTE_COMMA ,
+
+// Macro to define a mutable field with builder pattern method
+#define BANETTE_BUILDER_FIELD(StructType, FieldType, FieldName, ParamType) \
+	mutable FieldType FieldName; \
+	StructType& With_##FieldName(ParamType In##FieldName) \
 	{ \
-		MemberName = In##MemberName; \
+		FieldName = In##FieldName; \
 		return *this; \
 	}
 
-// Macro to generate builder pattern methods with move semantics
-#define BANETTE_WITH_MEMBER_MOVE(StructType, MemberName, ParamType) \
-	StructType& With_##MemberName(ParamType&& In##MemberName) \
+// Macro to define a mutable field with default value and builder pattern method
+#define BANETTE_BUILDER_FIELD_DEFAULT(StructType, FieldType, FieldName, DefaultValue, ParamType) \
+	mutable FieldType FieldName = DefaultValue; \
+	StructType& With_##FieldName(ParamType In##FieldName) \
 	{ \
-		MemberName = MoveTemp(In##MemberName); \
+		FieldName = In##FieldName; \
+		return *this; \
+	}
+
+// Macro to add a move semantic builder method for an existing field
+#define BANETTE_BUILDER_MOVE(StructType, FieldName, ParamType) \
+	StructType& With_##FieldName(ParamType&& In##FieldName) \
+	{ \
+		FieldName = MoveTemp(In##FieldName); \
 		return *this; \
 	}
 
 	// Request data for HTTP calls.
 	struct BANETTETRANSPORT_API FHttpRequest
 	{
-		// Absolute URL to call. Example: https://example.com/api
-		mutable FString Url;
-
-		// Verb to use. Default: GET
-		mutable EHttpMethod Method = EHttpMethod::Get;
-
-		// Optional request headers. Keys are case-insensitive by HTTP standard.
-		mutable TMap<FString, FString> Headers;
-
-		// Optional Content-Type. If set and not already provided in Headers, it will be added.
-		mutable FString ContentType;
-
-		// Optional request body. If empty, no body is sent.
-		mutable TArray<uint8> Body;
-
-		// Timeout in seconds. <= 0 means use engine default.
-		mutable float TimeoutSeconds = 0.f;
-
-		// Builder pattern methods for chained construction
-		BANETTE_WITH_MEMBER(FHttpRequest, Url, const FString&)
-		BANETTE_WITH_MEMBER(FHttpRequest, Method, EHttpMethod)
-		BANETTE_WITH_MEMBER(FHttpRequest, ContentType, const FString&)
-		BANETTE_WITH_MEMBER(FHttpRequest, Body, const TArray<uint8>&)
-		BANETTE_WITH_MEMBER_MOVE(FHttpRequest, Body, TArray<uint8>)
+		BANETTE_BUILDER_FIELD(FHttpRequest, FString, Url, const FString&)
+		BANETTE_BUILDER_FIELD_DEFAULT(FHttpRequest, EHttpMethod, Method, EHttpMethod::Get, EHttpMethod)
+		BANETTE_BUILDER_FIELD(FHttpRequest, TMap<FString BANETTE_COMMA FString>, Headers, const TMap<FString BANETTE_COMMA FString>&)
+		BANETTE_BUILDER_FIELD(FHttpRequest, FString, ContentType, const FString&)
+		BANETTE_BUILDER_FIELD(FHttpRequest, TArray<uint8>, Body, const TArray<uint8>&)
+		BANETTE_BUILDER_MOVE(FHttpRequest, Body, TArray<uint8>)
+		BANETTE_BUILDER_FIELD_DEFAULT(FHttpRequest, float, TimeoutSeconds, 0.f, float)
 
 		// Alias for With_TimeoutSeconds to match common naming convention
 		FHttpRequest& With_Timeout(float InTimeoutSeconds)
@@ -104,8 +100,10 @@ namespace Banette::Transport::Http
 		}
 	};
 
-#undef BANETTE_WITH_MEMBER
-#undef BANETTE_WITH_MEMBER_MOVE
+#undef BANETTE_BUILDER_FIELD
+#undef BANETTE_BUILDER_FIELD_DEFAULT
+#undef BANETTE_BUILDER_MOVE
+#undef BANETTE_COMMA
 
 	// Response data for HTTP calls.
 	struct BANETTETRANSPORT_API FHttpResponse
