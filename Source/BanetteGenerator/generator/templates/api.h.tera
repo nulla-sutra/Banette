@@ -35,7 +35,12 @@ struct {%- if module_name %} {{ module_name }} {% else %} {% endif -%}F{{ name }
 {% for prop_name, prop_schema in schema.properties %}
     // {{ prop_name }} (Required: {{ prop_name | is_required(required_list=schema.required | default(value=[])) }})
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    {{ prop_schema | to_ue_type }} {{ prop_name }};
+    {%- set prop_type = prop_schema | to_ue_type -%}
+    {%- if prop_type == "int32" or prop_type == "int64" or prop_type == "uint8" or prop_type == "float" or prop_type == "double" %}
+    {{ prop_type }} {{ prop_name }} = 0;
+    {%- else %}
+    {{ prop_type }} {{ prop_name }};
+    {%- endif -%}
 {%- endfor -%}
 {% endif %}
 };
