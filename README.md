@@ -2,7 +2,7 @@
 
 [![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
 
-**Banette** is an Unreal Engine plugin that provides a modular, layer-based architecture for building HTTP services with support for coroutines. Inspired by the "tower" service pattern, it enables clean composition of cross-cutting concerns like retries, rate limiting, header injection, and JSON parsing.
+**Banette** is an Unreal Engine plugin that provides a modular, layer-based architecture for building HTTP services with support for coroutines. Inspired by the "[tower](https://github.com/tower-rs/tower)" service pattern, it enables clean composition of cross-cutting concerns like retries, rate limiting, header injection, and JSON parsing.
 
 ## Features
 
@@ -29,7 +29,7 @@
 
 ## Installation
 
-1. Clone or copy this repository into your project's `Plugins/` directory:
+1. git submodule this repository into your project's `Plugins/` directory:
    ```
    YourProject/
    └── Plugins/
@@ -56,11 +56,6 @@ The foundational module providing the core abstractions for the service/layer pa
 | `TServiceBuilder<>` | Fluent builder for composing services with multiple layers |
 | `TServiceProvider<>` | Singleton pattern for service instance management |
 
-**Key Files:**
-- `Source/Banette/Core/Service.h` – Service base class
-- `Source/Banette/Core/Layer.h` – Layer base class
-- `Source/Banette/Core/Error.h` – Error handling with TResult
-- `Source/Banette/Pipeline/ServiceBuilder.h` – Builder pattern implementation
 
 ### BanetteTransport
 
@@ -310,31 +305,31 @@ The `BanetteTest` module contains test utilities. Tests can be run through Unrea
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     Your Application                         │
+│                     Your Application                        │
 ├─────────────────────────────────────────────────────────────┤
-│                    Generated API Layer                       │
+│                    Generated API Layer                      │
 │              (from OpenAPI via BanetteGenerator)            │
 ├─────────────────────────────────────────────────────────────┤
-│                      BanetteKit                              │
+│                      BanetteKit                             │
 │    ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────────────┐  │
 │    │ Retry   │ │ Rate    │ │ Origin  │ │ Header Injection│  │
 │    │ Layer   │ │ Limit   │ │ Layer   │ │ Layer           │  │
 │    └────┬────┘ └────┬────┘ └────┬────┘ └────────┬────────┘  │
 │         │           │           │               │           │
 │         └───────────┴───────────┴───────────────┘           │
-│                           │                                  │
+│                           │                                 │
 ├───────────────────────────┼─────────────────────────────────┤
-│                   BanetteTransport                           │
+│                   BanetteTransport                          │
 │              ┌────────────┴────────────┐                    │
-│              │       FHttpService       │                    │
-│              │    (HTTP Transport)      │                    │
+│              │       FHttpService      │                    │
+│              │    (HTTP Transport)     │                    │
 │              └─────────────────────────┘                    │
 ├─────────────────────────────────────────────────────────────┤
-│                      Banette (Core)                          │
+│                      Banette (Core)                         │
 │         TService, TLayer, TResult, ServiceBuilder           │
 ├─────────────────────────────────────────────────────────────┤
-│                      UE5Coro                                 │
-│              (Coroutine Infrastructure)                      │
+│                      UE5Coro                                │
+│              (Coroutine Infrastructure)                     │
 └─────────────────────────────────────────────────────────────┘
 ```
 
