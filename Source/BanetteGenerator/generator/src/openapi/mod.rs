@@ -110,7 +110,7 @@ pub extern "C" fn generate(
 ///   - The output file cannot be written to disk.
 ///
 /// # Example
-/// ```rust
+/// ```rust,ignore
 /// use anyhow::Result;
 ///
 /// fn main() -> Result<()> {
@@ -182,19 +182,6 @@ pub fn generate_safe(
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    //noinspection ALL
-    #[test]
-    fn test_generate() {
-        generate_safe(
-            "http://127.0.0.1:10802/docs/api.json",
-            "./target/test",
-            "AnxApi.h",
-            "ANXNET_API",
-            vec![],
-        )
-            .unwrap();
-    }
 
     #[test]
     fn test_parse_include_headers() {
