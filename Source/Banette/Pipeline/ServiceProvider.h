@@ -35,3 +35,16 @@ namespace Banette::Pipeline
 		}
 	};
 }
+
+#define BANETTE_SERVICE_PROVIDER(T) \
+static TSharedPtr<T> GetService() \
+{ \
+static TSharedPtr<T> Service = nullptr; \
+\
+if (!Service.IsValid()) \
+{ \
+Service = BuildService(); \
+return Service; \
+} \
+return Service; \
+}
