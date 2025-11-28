@@ -42,7 +42,7 @@ namespace Banette::Transport::Http
 #define BANETTE_COMMA ,
 
 	// Macro to define a mutable field with a builder pattern method
-#define BANETTE_BUILDER_FIELD(StructType, FieldType, FieldName, ParamType) \
+#define BANETTE_BUILDER_FIELD(StructType, FieldType, FieldName) \
 	mutable FieldType FieldName; \
 	StructType& With_##FieldName(const FieldType& In##FieldName) \
 	{ \
@@ -74,9 +74,9 @@ namespace Banette::Transport::Http
 		BANETTE_BUILDER_FIELD_DEFAULT(FHttpRequest, EHttpMethod, Method, EHttpMethod::Get)
 		BANETTE_BUILDER_FIELD_DEFAULT(FHttpRequest, TMap<FString BANETTE_COMMA FString>, Headers, {})
 		BANETTE_BUILDER_FIELD_DEFAULT(FHttpRequest, FString, ContentType, "application/json")
-		BANETTE_BUILDER_FIELD(FHttpRequest, TArray<uint8>, Body, TArray<uint8>&)
+		BANETTE_BUILDER_FIELD(FHttpRequest, TArray<uint8>, Body)
 		BANETTE_BUILDER_MOVE(FHttpRequest, TArray<uint8>, Body)
-		BANETTE_BUILDER_FIELD_DEFAULT(FHttpRequest, float, TimeoutSeconds, 0.f, float)
+		BANETTE_BUILDER_FIELD_DEFAULT(FHttpRequest, float, TimeoutSeconds, 0.f)
 
 		// Adds a single header and returns a reference for chaining.
 		FHttpRequest& AddHeader(const FString& Key, const FString& Value)

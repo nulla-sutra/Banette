@@ -193,7 +193,7 @@ namespace Banette::Kit
 	static TArray<uint8> ToBytes(const TArray<T>& Payload)
 	{
 		FString JsonString;
-		if (FJsonObjectConverter::UStructToJsonArrayOfStructsString(Payload, JsonString))
+		if (FJsonObjectConverter::JsonArrayStringToUStruct(Payload, JsonString))
 		{
 			return JsonStringToBytes(JsonString);
 		}
