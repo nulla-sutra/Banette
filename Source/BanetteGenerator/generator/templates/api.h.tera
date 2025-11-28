@@ -82,7 +82,9 @@ public:
             
         bool& bSuccess, FLatentActionInfo LatentInfo)
     {
-        const auto Req = FHttpRequest(){{ path | http_request_builder(method=method, parameters=operation.parameters, request_body=operation.requestBody) }};
+        {%- set req_body = operation.requestBody | default(value=false) -%}
+        {%- set req_params = operation.parameters | default(value=false) %}
+        const auto Req = FHttpRequest(){{ path | http_request_builder(method=method, parameters=req_params, request_body=req_body) }};
         const auto Res = co_await TServiceProvider<F{{ file_name }}Service>::GetService()->Call(Req);
         if (const auto* Resp = Res.TryGetValue())
         {

@@ -3,7 +3,6 @@
  */
 
 pub mod http_request_builder;
-pub mod http_request_params;
 pub mod is_required;
 pub mod path_to_func_name;
 pub mod request_body_schema;
@@ -31,10 +30,6 @@ pub fn register_all_filters(tera: &mut Tera) {
     tera.register_filter(
         "path_to_func_name",
         path_to_func_name::path_to_func_name_filter,
-    );
-    tera.register_filter(
-        "http_request_params",
-        http_request_params::http_request_params_filter,
     );
     tera.register_filter(
         "http_request_builder",
