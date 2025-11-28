@@ -38,30 +38,30 @@ namespace Banette::Transport::Http
 		Head
 	};
 
-// Helper macro to handle commas in macro arguments
+	// Helper macro to handle commas in macro arguments
 #define BANETTE_COMMA ,
 
-// Macro to define a mutable field with builder pattern method
+	// Macro to define a mutable field with a builder pattern method
 #define BANETTE_BUILDER_FIELD(StructType, FieldType, FieldName, ParamType) \
 	mutable FieldType FieldName; \
-	StructType& With_##FieldName(ParamType In##FieldName) \
+	StructType& With_##FieldName(const FieldType& In##FieldName) \
 	{ \
 		FieldName = In##FieldName; \
 		return *this; \
 	}
 
-// Macro to define a mutable field with default value and builder pattern method
-#define BANETTE_BUILDER_FIELD_DEFAULT(StructType, FieldType, FieldName, DefaultValue, ParamType) \
+	// Macro to define a mutable field with a default value and builder pattern method
+#define BANETTE_BUILDER_FIELD_DEFAULT(StructType, FieldType, FieldName, DefaultValue) \
 	mutable FieldType FieldName = DefaultValue; \
-	StructType& With_##FieldName(ParamType In##FieldName) \
+	StructType& With_##FieldName(const FieldType& In##FieldName) \
 	{ \
 		FieldName = In##FieldName; \
 		return *this; \
 	}
 
-// Macro to add a move semantic builder method for an existing field
-#define BANETTE_BUILDER_MOVE(StructType, FieldName, ParamType) \
-	StructType& With_##FieldName(ParamType&& In##FieldName) \
+	// Macro to add a move semantic builder method for an existing field
+#define BANETTE_BUILDER_MOVE(StructType, FieldType, FieldName) \
+	StructType& With_##FieldName(FieldType&& In##FieldName) \
 	{ \
 		FieldName = MoveTemp(In##FieldName); \
 		return *this; \
@@ -70,32 +70,18 @@ namespace Banette::Transport::Http
 	// Request data for HTTP calls.
 	struct BANETTETRANSPORT_API FHttpRequest
 	{
-		BANETTE_BUILDER_FIELD(FHttpRequest, FString, Url, const FString&)
-		BANETTE_BUILDER_FIELD_DEFAULT(FHttpRequest, EHttpMethod, Method, EHttpMethod::Get, EHttpMethod)
-		BANETTE_BUILDER_FIELD(FHttpRequest, TMap<FString BANETTE_COMMA FString>, Headers, const TMap<FString BANETTE_COMMA FString>&)
-		BANETTE_BUILDER_FIELD(FHttpRequest, FString, ContentType, const FString&)
-		BANETTE_BUILDER_FIELD(FHttpRequest, TArray<uint8>, Body, const TArray<uint8>&)
-		BANETTE_BUILDER_MOVE(FHttpRequest, Body, TArray<uint8>)
+		BANETTE_BUILDER_FIELD(FHttpRequest, FString, Url)
+		BANETTE_BUILDER_FIELD_DEFAULT(FHttpRequest, EHttpMethod, Method, EHttpMethod::Get)
+		BANETTE_BUILDER_FIELD_DEFAULT(FHttpRequest, TMap<FString BANETTE_COMMA FString>, Headers, {})
+		BANETTE_BUILDER_FIELD_DEFAULT(FHttpRequest, FString, ContentType, "application/json")
+		BANETTE_BUILDER_FIELD(FHttpRequest, TArray<uint8>, Body, TArray<uint8>&)
+		BANETTE_BUILDER_MOVE(FHttpRequest, TArray<uint8>, Body)
 		BANETTE_BUILDER_FIELD_DEFAULT(FHttpRequest, float, TimeoutSeconds, 0.f, float)
 
-		// Alias for With_TimeoutSeconds to match common naming convention
-		FHttpRequest& With_Timeout(float InTimeoutSeconds)
-		{
-			TimeoutSeconds = InTimeoutSeconds;
-			return *this;
-		}
-
 		// Adds a single header and returns a reference for chaining.
-		FHttpRequest& With_Header(const FString& Key, const FString& Value)
+		FHttpRequest& AddHeader(const FString& Key, const FString& Value)
 		{
 			Headers.Add(Key, Value);
-			return *this;
-		}
-
-		// Sets/merges multiple headers and returns a reference for chaining.
-		FHttpRequest& With_Headers(const TMap<FString, FString>& InHeaders)
-		{
-			Headers.Append(InHeaders);
 			return *this;
 		}
 	};
