@@ -38,27 +38,58 @@ namespace Banette::Transport::Http
 		Head
 	};
 
+	// Helper macro to handle commas in macro arguments
+#define BANETTE_COMMA ,
+
+	// Macro to define a mutable field with a builder pattern method
+#define BANETTE_BUILDER_FIELD(StructType, FieldType, FieldName, ParamType) \
+	mutable FieldType FieldName; \
+	StructType& With_##FieldName(const FieldType& In##FieldName) \
+	{ \
+		FieldName = In##FieldName; \
+		return *this; \
+	}
+
+	// Macro to define a mutable field with a default value and builder pattern method
+#define BANETTE_BUILDER_FIELD_DEFAULT(StructType, FieldType, FieldName, DefaultValue) \
+	mutable FieldType FieldName = DefaultValue; \
+	StructType& With_##FieldName(const FieldType& In##FieldName) \
+	{ \
+		FieldName = In##FieldName; \
+		return *this; \
+	}
+
+	// Macro to add a move semantic builder method for an existing field
+#define BANETTE_BUILDER_MOVE(StructType, FieldType, FieldName) \
+	StructType& With_##FieldName(FieldType&& In##FieldName) \
+	{ \
+		FieldName = MoveTemp(In##FieldName); \
+		return *this; \
+	}
+
 	// Request data for HTTP calls.
 	struct BANETTETRANSPORT_API FHttpRequest
 	{
-		// Absolute URL to call. Example: https://example.com/api
-		mutable FString Url;
+		BANETTE_BUILDER_FIELD(FHttpRequest, FString, Url)
+		BANETTE_BUILDER_FIELD_DEFAULT(FHttpRequest, EHttpMethod, Method, EHttpMethod::Get)
+		BANETTE_BUILDER_FIELD_DEFAULT(FHttpRequest, TMap<FString BANETTE_COMMA FString>, Headers, {})
+		BANETTE_BUILDER_FIELD_DEFAULT(FHttpRequest, FString, ContentType, "application/json")
+		BANETTE_BUILDER_FIELD(FHttpRequest, TArray<uint8>, Body, TArray<uint8>&)
+		BANETTE_BUILDER_MOVE(FHttpRequest, TArray<uint8>, Body)
+		BANETTE_BUILDER_FIELD_DEFAULT(FHttpRequest, float, TimeoutSeconds, 0.f, float)
 
-		// Verb to use. Default: GET
-		mutable EHttpMethod Method = EHttpMethod::Get;
-
-		// Optional request headers. Keys are case-insensitive by HTTP standard.
-		mutable TMap<FString, FString> Headers;
-
-		// Optional Content-Type. If set and not already provided in Headers, it will be added.
-		mutable FString ContentType;
-
-		// Optional request body. If empty, nobody is sent.
-		mutable TArray<uint8> Body;
-
-		// Timeout in seconds. <= 0 means use engine default.
-		mutable float TimeoutSeconds = 0.f;
+		// Adds a single header and returns a reference for chaining.
+		FHttpRequest& AddHeader(const FString& Key, const FString& Value)
+		{
+			Headers.Add(Key, Value);
+			return *this;
+		}
 	};
+
+#undef BANETTE_BUILDER_FIELD
+#undef BANETTE_BUILDER_FIELD_DEFAULT
+#undef BANETTE_BUILDER_MOVE
+#undef BANETTE_COMMA
 
 	// Response data for HTTP calls.
 	struct BANETTETRANSPORT_API FHttpResponse

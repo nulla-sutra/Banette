@@ -47,4 +47,5 @@ Service = BuildService(); \
 return Service; \
 } \
 return Service; \
-}
+} \
+static TSharedPtr<T> BuildService()
