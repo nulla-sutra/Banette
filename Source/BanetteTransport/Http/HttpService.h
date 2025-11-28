@@ -38,6 +38,22 @@ namespace Banette::Transport::Http
 		Head
 	};
 
+// Macro to generate builder pattern methods for struct members
+#define BANETTE_WITH_MEMBER(StructType, MemberName, ParamType) \
+	StructType& With_##MemberName(ParamType In##MemberName) \
+	{ \
+		MemberName = In##MemberName; \
+		return *this; \
+	}
+
+// Macro to generate builder pattern methods with move semantics
+#define BANETTE_WITH_MEMBER_MOVE(StructType, MemberName, ParamType) \
+	StructType& With_##MemberName(ParamType&& In##MemberName) \
+	{ \
+		MemberName = MoveTemp(In##MemberName); \
+		return *this; \
+	}
+
 	// Request data for HTTP calls.
 	struct BANETTETRANSPORT_API FHttpRequest
 	{
@@ -60,18 +76,16 @@ namespace Banette::Transport::Http
 		mutable float TimeoutSeconds = 0.f;
 
 		// Builder pattern methods for chained construction
+		BANETTE_WITH_MEMBER(FHttpRequest, Url, const FString&)
+		BANETTE_WITH_MEMBER(FHttpRequest, Method, EHttpMethod)
+		BANETTE_WITH_MEMBER(FHttpRequest, ContentType, const FString&)
+		BANETTE_WITH_MEMBER(FHttpRequest, Body, const TArray<uint8>&)
+		BANETTE_WITH_MEMBER_MOVE(FHttpRequest, Body, TArray<uint8>)
 
-		// Sets the URL and returns a reference for chaining.
-		FHttpRequest& With_Url(const FString& InUrl)
+		// Alias for With_TimeoutSeconds to match common naming convention
+		FHttpRequest& With_Timeout(float InTimeoutSeconds)
 		{
-			Url = InUrl;
-			return *this;
-		}
-
-		// Sets the HTTP method and returns a reference for chaining.
-		FHttpRequest& With_Method(EHttpMethod InMethod)
-		{
-			Method = InMethod;
+			TimeoutSeconds = InTimeoutSeconds;
 			return *this;
 		}
 
@@ -88,35 +102,10 @@ namespace Banette::Transport::Http
 			Headers.Append(InHeaders);
 			return *this;
 		}
-
-		// Sets the Content-Type and returns a reference for chaining.
-		FHttpRequest& With_ContentType(const FString& InContentType)
-		{
-			ContentType = InContentType;
-			return *this;
-		}
-
-		// Sets the request body (copy) and returns a reference for chaining.
-		FHttpRequest& With_Body(const TArray<uint8>& InBody)
-		{
-			Body = InBody;
-			return *this;
-		}
-
-		// Sets the request body (move) and returns a reference for chaining.
-		FHttpRequest& With_Body(TArray<uint8>&& InBody)
-		{
-			Body = MoveTemp(InBody);
-			return *this;
-		}
-
-		// Sets the timeout in seconds and returns a reference for chaining.
-		FHttpRequest& With_Timeout(float InTimeoutSeconds)
-		{
-			TimeoutSeconds = InTimeoutSeconds;
-			return *this;
-		}
 	};
+
+#undef BANETTE_WITH_MEMBER
+#undef BANETTE_WITH_MEMBER_MOVE
 
 	// Response data for HTTP calls.
 	struct BANETTETRANSPORT_API FHttpResponse
