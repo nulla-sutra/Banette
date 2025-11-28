@@ -147,9 +147,15 @@ namespace Banette::Kit
 					return nullptr;
 				}
 
-				// Convert bytes to string using the codebase pattern
+				// Convert bytes to string with explicit length to avoid buffer overreads
+				// Ensure null-termination by creating an ANSICHAR array with explicit null terminator
+				TArray<ANSICHAR> NullTerminatedBytes;
+				NullTerminatedBytes.SetNumUninitialized(Bytes.Num() + 1);
+				FMemory::Memcpy(NullTerminatedBytes.GetData(), Bytes.GetData(), Bytes.Num());
+				NullTerminatedBytes[Bytes.Num()] = '\0';
+
 				const FString JsonString = FString(
-					StringCast<TCHAR>(reinterpret_cast<const char*>(Bytes.GetData())).Get()
+					StringCast<TCHAR>(NullTerminatedBytes.GetData()).Get()
 				);
 
 				// Parse JSON
