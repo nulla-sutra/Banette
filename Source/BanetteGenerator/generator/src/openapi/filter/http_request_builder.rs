@@ -411,7 +411,7 @@ mod tests {
     #[test]
     fn test_mixed_case_method() {
         let path = json!("/v1/data");
-        let args = create_method_args("PoSt");
+        let _args = create_method_args("PoSt");
         let request_body = json!({
             "content": {
                 "application/json": {}
@@ -528,7 +528,7 @@ mod tests {
         assert_eq!(content_type, Some("application/json".to_string()));
     }
 
-    // Test 19: Extract content type falls back to first available
+    // Test 19: Extract content type falls back to the first available
     #[test]
     fn test_extract_content_type_fallback() {
         let request_body = json!({
@@ -560,7 +560,7 @@ mod tests {
         );
     }
 
-    // Test 21: Special characters in path are escaped
+    // Test 21: Special characters in a path are escaped
     #[test]
     fn test_special_characters_in_path() {
         let path = json!("/api/path\"with\"quotes");
@@ -573,7 +573,7 @@ mod tests {
         );
     }
 
-    // Test 22: Backslash in path is escaped
+    // Test 22: Backslash in a path is escaped
     #[test]
     fn test_backslash_in_path() {
         let path = json!("/api/path\\with\\backslash");
@@ -586,7 +586,7 @@ mod tests {
         );
     }
 
-    // Test 23: Complex example from problem statement
+    // Test 23: Complex example from a problem statement
     #[test]
     fn test_problem_statement_example_post() {
         let path = json!("/v1/characters");
@@ -603,7 +603,7 @@ mod tests {
         let args = create_full_args("post", None, Some(request_body));
 
         let result = http_request_builder_filter(&path, &args).unwrap();
-        // Expected output from problem statement:
+        // Expected output from a problem statement:
         // .With_Url(TEXT("/v1/characters"))
         // .With_Method(EHttpMethod::Post)
         // .With_ContentType(TEXT("application/json"))
@@ -614,14 +614,14 @@ mod tests {
         );
     }
 
-    // Test 24: GET request without requestBody (from problem statement)
+    // Test 24: GET request without requestBody (from a problem statement)
     #[test]
     fn test_problem_statement_example_get() {
         let path = json!("/v1/characters");
         let args = create_method_args("get");
 
         let result = http_request_builder_filter(&path, &args).unwrap();
-        // Expected output from problem statement:
+        // Expected output from a problem statement:
         // .With_Url(TEXT("/v1/characters"))
         // .With_Method(EHttpMethod::Get)
         assert_eq!(
