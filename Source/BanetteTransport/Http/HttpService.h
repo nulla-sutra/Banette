@@ -53,11 +53,69 @@ namespace Banette::Transport::Http
 		// Optional Content-Type. If set and not already provided in Headers, it will be added.
 		mutable FString ContentType;
 
-		// Optional request body. If empty, nobody is sent.
+		// Optional request body. If empty, no body is sent.
 		mutable TArray<uint8> Body;
 
 		// Timeout in seconds. <= 0 means use engine default.
 		mutable float TimeoutSeconds = 0.f;
+
+		// Builder pattern methods for chained construction
+
+		// Sets the URL and returns a reference for chaining.
+		FHttpRequest& With_Url(const FString& InUrl)
+		{
+			Url = InUrl;
+			return *this;
+		}
+
+		// Sets the HTTP method and returns a reference for chaining.
+		FHttpRequest& With_Method(EHttpMethod InMethod)
+		{
+			Method = InMethod;
+			return *this;
+		}
+
+		// Adds a single header and returns a reference for chaining.
+		FHttpRequest& With_Header(const FString& Key, const FString& Value)
+		{
+			Headers.Add(Key, Value);
+			return *this;
+		}
+
+		// Sets/merges multiple headers and returns a reference for chaining.
+		FHttpRequest& With_Headers(const TMap<FString, FString>& InHeaders)
+		{
+			Headers.Append(InHeaders);
+			return *this;
+		}
+
+		// Sets the Content-Type and returns a reference for chaining.
+		FHttpRequest& With_ContentType(const FString& InContentType)
+		{
+			ContentType = InContentType;
+			return *this;
+		}
+
+		// Sets the request body (copy) and returns a reference for chaining.
+		FHttpRequest& With_Body(const TArray<uint8>& InBody)
+		{
+			Body = InBody;
+			return *this;
+		}
+
+		// Sets the request body (move) and returns a reference for chaining.
+		FHttpRequest& With_Body(TArray<uint8>&& InBody)
+		{
+			Body = MoveTemp(InBody);
+			return *this;
+		}
+
+		// Sets the timeout in seconds and returns a reference for chaining.
+		FHttpRequest& With_Timeout(float InTimeoutSeconds)
+		{
+			TimeoutSeconds = InTimeoutSeconds;
+			return *this;
+		}
 	};
 
 	// Response data for HTTP calls.
