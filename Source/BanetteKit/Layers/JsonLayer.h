@@ -168,4 +168,16 @@ namespace Banette::Kit
 			}
 		};
 	};
+
+	template <typename T>
+	static TArray<uint8> ToBytes(const T& Payload)
+	{
+		return {};
+	}
+	
+	template <typename T>
+	static TArray<uint8> ToBytes(const TArray<T>& Payload)
+	{
+		return {};
+	}
 }
