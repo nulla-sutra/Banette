@@ -147,10 +147,10 @@ namespace Banette::Kit
 					return nullptr;
 				}
 
-				// Convert bytes to string
+				// Convert bytes to string using the codebase pattern
 				const FString JsonString = FString(
-					Bytes.Num(),
-					UTF8_TO_TCHAR(reinterpret_cast<const ANSICHAR*>(Bytes.GetData())));
+					StringCast<TCHAR>(reinterpret_cast<const char*>(Bytes.GetData())).Get()
+				);
 
 				// Parse JSON
 				TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
