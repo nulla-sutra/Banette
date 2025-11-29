@@ -66,7 +66,8 @@ pub fn http_request_builder_filter(value: &Value, args: &HashMap<String, Value>)
     chain_calls.push(format!(".With_Method(EHttpMethod::{})", http_method));
 
     // Add .With_ContentType(...) and .With_Body(...) if requestBody exists
-    if let Some(body) = request_body && body.is_object()
+    if let Some(body) = request_body
+        && body.is_object()
     {
         if let Some(content_type) = extract_content_type(body) {
             chain_calls.push(format!(
@@ -78,7 +79,7 @@ pub fn http_request_builder_filter(value: &Value, args: &HashMap<String, Value>)
     }
 
     // Join all chain calls
-    let result = chain_calls.join("");
+    let result = format!("FHttpRequest(){}", chain_calls.join(""));
 
     Ok(to_value(result)?)
 }
