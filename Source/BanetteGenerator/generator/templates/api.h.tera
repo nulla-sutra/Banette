@@ -10,7 +10,7 @@
 {%- if include_headers -%}
 {%- for header in include_headers %}
 {{ header }}
-{% endfor -%}
+{%- endfor -%}
 {%- endif %}
 #include "{{ file_name }}.generated.h"
 
