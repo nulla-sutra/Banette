@@ -2,13 +2,13 @@
 
 [![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
 
-**Banette** is an Unreal Engine plugin that provides a modular, layer-based architecture for building HTTP services with support for coroutines. Inspired by the "[tower](https://github.com/tower-rs/tower)" service pattern, it enables clean composition of cross-cutting concerns like retries, rate limiting, header injection, and JSON parsing.
+**Banette** is an Unreal Engine plugin that provides a modular, layer-based architecture for building network clients with support for coroutines. Inspired by the "[tower](https://github.com/tower-rs/tower)" service pattern, it enables clean composition of cross-cutting concerns like retries, rate limiting, header injection, and JSON parsing.
 
 ## Features
 
 - **Layer-based Architecture**: Compose services by stacking layers (middleware), each handling a specific concern
 - **Coroutine Support**: Built on [UE5Coro](https://github.com/landelare/ue5coro) for async/await style code
-- **HTTP Transport**: Native HTTP service implementation using Unreal's HTTP module
+- **HTTP Transport**: Native HTTP client implementation using Unreal's HTTP module
 - **Reusable Layers**: Pre-built layers for common patterns (retry, rate limiting, header injection, JSON parsing, URL origin)
 - **OpenAPI Code Generation**: Rust-based generator that creates Unreal Engine C++ code from OpenAPI specifications
 - **Blueprint Integration**: Expose generated APIs as Blueprint-callable functions
@@ -59,11 +59,11 @@ The foundational module providing the core abstractions for the service/layer pa
 
 ### BanetteTransport
 
-Provides concrete HTTP transport implementation built on Unreal's HTTP module.
+Provides concrete HTTP client implementation built on Unreal's HTTP module.
 
 | Component | Description |
 |-----------|-------------|
-| `FHttpService` | HTTP service implementation with coroutine-based async calls |
+| `FHttpService` | HTTP client implementation with coroutine-based async calls |
 | `FHttpRequest` | Request data structure with builder pattern for configuration |
 | `FHttpResponse` | Response data structure with status, headers, and body |
 | `EHttpMethod` | Enum for HTTP methods (GET, POST, PUT, DELETE, PATCH, HEAD) |
@@ -232,6 +232,41 @@ Config.bWaitForToken = true;   // Wait if rate limited
 TRateLimitLayer<FHttpService> RateLimitLayer(Config);
 ```
 
+### Using TServiceProvider with Generator
+
+`TServiceProvider` enables singleton-style service management and integrates with the code generator. Implement the `buildService` function to configure the HTTP client used for API calls:
+
+```cpp
+using FAnxHttpApiService = TService<FHttpRequest, FHttpJsonResponse>;
+
+template <>
+struct Banette::Pipeline::TServiceProvider<FAnxHttpApiService>
+{
+	BANETTE_SERVICE_PROVIDER(FAnxHttpApiService)
+	{
+		const auto HttpService = MakeShared<FHttpService>();
+
+		FInjectHeaderLayer InjectHeader{};
+		const TRetryLayer<FHttpService> Retry({});
+		const TRateLimitLayer<FHttpService> RateLimit({});
+		const FJsonLayer Json{};
+		FHttpOriginLayer OriginLayer(TEXT("http://127.0.0.1:10802"));
+
+		InjectHeader.
+			AddHeader(TEXT("Authorization"), FString::Format(TEXT("Bearer {0}"), {"debug-token"}));
+
+
+		return TServiceBuilder<>::New(HttpService)
+		       .Layer(OriginLayer)
+		       .Layer(InjectHeader)
+		       .Layer(RateLimit)
+		       .Layer(Retry)
+		       .Layer(Json)
+		       .Build();
+	}
+};
+```
+
 ## OpenAPI Code Generation
 
 ### Using the Command Line
@@ -320,10 +355,14 @@ The `BanetteTest` module contains test utilities. Tests can be run through Unrea
 │                           │                                 │
 ├───────────────────────────┼─────────────────────────────────┤
 │                   BanetteTransport                          │
-│              ┌────────────┴────────────┐                    │
-│              │       FHttpService      │                    │
-│              │    (HTTP Transport)     │                    │
-│              └─────────────────────────┘                    │
+│              ┌────────────────────────────────┐             │
+│              │       FHttpService             │             │
+│              │      (HTTP Client)             │             │
+│              └────────────────────────────────┘             │
+│              ┌────────────────────────────────┐             │
+│              │     Custom Transport           │             │
+│              │       (Extensible)             │             │
+│              └────────────────────────────────┘             │
 ├─────────────────────────────────────────────────────────────┤
 │                      Banette (Core)                         │
 │         TService, TLayer, TResult, ServiceBuilder           │
