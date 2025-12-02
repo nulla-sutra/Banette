@@ -14,7 +14,7 @@ namespace Banette::Pipeline
 	{
 		virtual ~TServiceProvider() = default;
 
-		static TSharedPtr<T> BuildService()
+		static UE5Coro::TCoroutine<TSharedPtr<T>> BuildService(bool& bSuccess)
 		{
 			static_assert(sizeof(T) == 0,
 			              "Banette::Pipeline::GetServiceImpl(TServiceTag<T>) is not specialized "
@@ -22,30 +22,32 @@ namespace Banette::Pipeline
 			return nullptr;
 		}
 
-		static TSharedPtr<T> GetService()
+		static UE5Coro::TCoroutine<TSharedPtr<T>> GetService()
 		{
 			static TSharedPtr<T> Service = nullptr;
+			static bool bSuccess = true;
 
-			if (!Service.IsValid())
+			if (!Service.IsValid() || !bSuccess)
 			{
-				Service = BuildService();
-				return Service;
+				Service = co_await BuildService(bSuccess);
+				co_return Service;
 			}
-			return Service;
+			co_return Service;
 		}
 	};
 }
 
 #define BANETTE_SERVICE_PROVIDER(T) \
-static TSharedPtr<T> GetService() \
+static UE5Coro::TCoroutine<TSharedPtr<T>> GetService() \
 { \
 static TSharedPtr<T> Service = nullptr; \
+static bool bSuccess = true; \
 \
-if (!Service.IsValid()) \
+if (!Service.IsValid() || !bSuccess) \
 { \
-Service = BuildService(); \
-return Service; \
+Service = co_await BuildService(bSuccess); \
+co_return Service; \
 } \
-return Service; \
+co_return Service; \
 } \
-static TSharedPtr<T> BuildService()
+static UE5Coro::TCoroutine<TSharedPtr<T>> BuildService(bool& bSuccess)

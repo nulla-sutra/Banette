@@ -85,7 +85,8 @@ public:
         {%- set req_body = operation.requestBody | default(value=false) -%}
         {%- set req_params = operation.parameters | default(value=false) %}
         const auto Req = {{ path | http_request_builder(method=method, parameters=req_params, request_body=req_body) }};
-        const auto Res = co_await TServiceProvider<F{{ file_name }}Service>::GetService()->Call(Req);
+        const auto Sev = co_await TServiceProvider<F{{ file_name }}Service>::GetService();
+        const auto Res = co_await Sev->Call(Req);
         if (const auto* Resp = Res.TryGetValue())
         {
             bSuccess = true;
