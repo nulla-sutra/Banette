@@ -12,6 +12,10 @@ namespace Banette::Kit
 	using namespace Banette::Core;
 	using namespace Banette::Transport::Http;
 
+	/// Type alias for async lazy header providers.
+	/// A function that returns a coroutine yielding the header value.
+	using FLazyHeaderProvider = TFunction<UE5Coro::TCoroutine<FString>()>;
+
 	/// Layer that injects HTTP headers into outgoing requests.
 	///
 	/// This layer wraps an FHttpService and merges configured headers into each
@@ -65,9 +69,22 @@ namespace Banette::Kit
 			return *this;
 		}
 
+		/**
+		 * Add an async lazy header to the injection set. The provider coroutine is
+		 * awaited at call time to retrieve the header value dynamically.
+		 * Returns *this for chaining.
+		 * @param Name           Header name.
+		 * @param Provider       Async function (coroutine) that returns the header value when awaited.
+		 */
+		FInjectHeaderLayer& LazyHeader(const FString& Name, FLazyHeaderProvider Provider)
+		{
+			AsyncLazyHeaders.Add(Name, MoveTemp(Provider));
+			return *this;
+		}
+
 		virtual TSharedRef<FHttpService> Wrap(TSharedRef<FHttpService> Inner) const override
 		{
-			return MakeShared<FInjectHeaderService>(Inner, Headers, LazyHeaders, bOverrideExisting);
+			return MakeShared<FInjectHeaderService>(Inner, Headers, LazyHeaders, AsyncLazyHeaders, bOverrideExisting);
 		}
 
 		virtual ~FInjectHeaderLayer() override = default;
@@ -75,6 +92,7 @@ namespace Banette::Kit
 	private:
 		TMap<FString, FString> Headers;
 		TMap<FString, TFunction<FString()>> LazyHeaders;
+		TMap<FString, FLazyHeaderProvider> AsyncLazyHeaders;
 		bool bOverrideExisting;
 
 		/**
@@ -87,10 +105,12 @@ namespace Banette::Kit
 				const TSharedRef<FHttpService>& InInner,
 				const TMap<FString, FString>& InHeaders,
 				const TMap<FString, TFunction<FString()>>& InLazyHeaders,
+				const TMap<FString, FLazyHeaderProvider>& InAsyncLazyHeaders,
 				const bool bInOverrideExisting)
 				: InnerService(InInner)
 				  , Headers(InHeaders)
 				  , LazyHeaders(InLazyHeaders)
+				  , AsyncLazyHeaders(InAsyncLazyHeaders)
 				  , bOverrideExisting(bInOverrideExisting)
 			{
 			}
@@ -99,7 +119,7 @@ namespace Banette::Kit
 				const FHttpRequest& Request) override
 			{
 				// Create a copy of the request to inject headers
-				const FHttpRequest ModifiedRequest = Request;
+				FHttpRequest ModifiedRequest = Request;
 
 				// Merge configured static headers into the request
 				for (const auto& Kvp : Headers)
@@ -138,6 +158,25 @@ namespace Banette::Kit
 					}
 				}
 
+				// Merge configured async lazy headers into the request (awaited at call time)
+				for (const auto& Kvp : AsyncLazyHeaders)
+				{
+					if (bOverrideExisting)
+					{
+						// Always set/replace the header with the async lazily evaluated value
+						ModifiedRequest.Headers.FindOrAdd(Kvp.Key) = co_await Kvp.Value();
+					}
+					else
+					{
+						// Only add if the key does not already exist
+						// Await the provider only when the header will actually be added
+						if (!ModifiedRequest.Headers.Contains(Kvp.Key))
+						{
+							ModifiedRequest.Headers.Add(Kvp.Key, co_await Kvp.Value());
+						}
+					}
+				}
+
 				// Forward the modified request to the inner service
 				co_return co_await InnerService->Call(ModifiedRequest);
 			}
@@ -146,6 +185,7 @@ namespace Banette::Kit
 			TSharedRef<FHttpService> InnerService;
 			TMap<FString, FString> Headers;
 			TMap<FString, TFunction<FString()>> LazyHeaders;
+			TMap<FString, FLazyHeaderProvider> AsyncLazyHeaders;
 			bool bOverrideExisting;
 		};
 	};
