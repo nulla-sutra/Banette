@@ -119,7 +119,7 @@ namespace Banette::Kit
 				const FHttpRequest& Request) override
 			{
 				// Create a copy of the request to inject headers
-				const FHttpRequest ModifiedRequest = Request;
+				FHttpRequest ModifiedRequest = Request;
 
 				// Merge configured static headers into the request
 				for (const auto& Kvp : Headers)
