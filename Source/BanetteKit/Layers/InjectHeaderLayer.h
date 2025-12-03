@@ -12,9 +12,6 @@ namespace Banette::Kit
 	using namespace Banette::Core;
 	using namespace Banette::Transport::Http;
 
-	/// Type alias for lazy header providers that retrieve header values at call time.
-	using FLazyHeaderProvider = TFunction<FString()>;
-
 	/// Layer that injects HTTP headers into outgoing requests.
 	///
 	/// This layer wraps an FHttpService and merges configured headers into each
@@ -62,7 +59,7 @@ namespace Banette::Kit
 		 * @param Name           Header name.
 		 * @param Provider       Function that returns the header value when invoked.
 		 */
-		FInjectHeaderLayer& LazyHeader(const FString& Name, FLazyHeaderProvider Provider)
+		FInjectHeaderLayer& LazyHeader(const FString& Name, TFunction<FString()> Provider)
 		{
 			LazyHeaders.Add(Name, MoveTemp(Provider));
 			return *this;
@@ -77,7 +74,7 @@ namespace Banette::Kit
 
 	private:
 		TMap<FString, FString> Headers;
-		TMap<FString, FLazyHeaderProvider> LazyHeaders;
+		TMap<FString, TFunction<FString()>> LazyHeaders;
 		bool bOverrideExisting;
 
 		/**
@@ -89,7 +86,7 @@ namespace Banette::Kit
 			FInjectHeaderService(
 				const TSharedRef<FHttpService>& InInner,
 				const TMap<FString, FString>& InHeaders,
-				const TMap<FString, FLazyHeaderProvider>& InLazyHeaders,
+				const TMap<FString, TFunction<FString()>>& InLazyHeaders,
 				const bool bInOverrideExisting)
 				: InnerService(InInner)
 				  , Headers(InHeaders)
@@ -102,7 +99,7 @@ namespace Banette::Kit
 				const FHttpRequest& Request) override
 			{
 				// Create a copy of the request to inject headers
-				FHttpRequest ModifiedRequest = Request;
+				const FHttpRequest ModifiedRequest = Request;
 
 				// Merge configured static headers into the request
 				for (const auto& Kvp : Headers)
@@ -148,7 +145,7 @@ namespace Banette::Kit
 		private:
 			TSharedRef<FHttpService> InnerService;
 			TMap<FString, FString> Headers;
-			TMap<FString, FLazyHeaderProvider> LazyHeaders;
+			TMap<FString, TFunction<FString()>> LazyHeaders;
 			bool bOverrideExisting;
 		};
 	};
