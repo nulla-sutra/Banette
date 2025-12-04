@@ -57,6 +57,14 @@ namespace Banette::Kit
 	///     co_return TEXT("https://dynamic-origin.com");
 	/// });
 	///
+	/// // Or with a default fallback origin:
+	/// FHttpOriginLayer OriginLayerWithDefault(
+	///     []() -> UE5Coro::TCoroutine<FString> {
+	///         co_return TEXT("https://dynamic-origin.com");
+	///     },
+	///     TEXT("https://default-origin.com")  // Fallback if provider returns empty
+	/// );
+	///
 	/// TSharedRef<FHttpService> ServiceWithOrigin = TServiceBuilder<>::New(Base)
 	///     .Layer(OriginLayer)
 	///     .Build();
@@ -77,9 +85,10 @@ namespace Banette::Kit
 		 * Construct an origin-prefixing layer with an async origin provider.
 		 * The provider coroutine is awaited at call time to dynamically resolve the origin URL.
 		 * @param InOriginProvider Async function (coroutine) that returns the origin URL when awaited.
+		 * @param InDefaultOrigin Optional default origin to use as fallback if the provider returns an empty string.
 		 */
-		explicit FHttpOriginLayer(FLazyOriginProvider InOriginProvider)
-			: Origin()
+		explicit FHttpOriginLayer(FLazyOriginProvider InOriginProvider, const FString& InDefaultOrigin = FString())
+			: Origin(InDefaultOrigin)
 			, OriginProvider(MoveTemp(InOriginProvider))
 		{
 		}
@@ -126,6 +135,11 @@ namespace Banette::Kit
 				if (OriginProvider.IsBound())
 				{
 					ResolvedOrigin = co_await OriginProvider();
+					// Fall back to default origin if provider returns empty
+					if (ResolvedOrigin.IsEmpty())
+					{
+						ResolvedOrigin = Origin;
+					}
 				}
 				else
 				{
