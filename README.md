@@ -237,6 +237,8 @@ TRateLimitLayer<FHttpService> RateLimitLayer(Config);
 `TServiceProvider` enables singleton-style service management and integrates with the code generator. Implement the `buildService` function to configure the HTTP client used for API calls:
 
 ```cpp
+/// You propbably want to put this file in generator's extra-headers parameter
+
 using FAnxHttpApiService = TService<FHttpRequest, FHttpJsonResponse>;
 
 template <>
