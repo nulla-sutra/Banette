@@ -12,6 +12,10 @@ namespace Banette::Kit
 	using namespace Banette::Core;
 	using namespace Banette::Transport::Http;
 
+	/// Type alias for async lazy origin providers.
+	/// A function that returns a coroutine yielding the origin URL.
+	using FLazyOriginProvider = TFunction<UE5Coro::TCoroutine<FString>()>;
+
 	/// Layer that prefixes request URLs with a configured origin (base URL).
 	///
 	/// This layer wraps an FHttpService and prepends the origin to each
@@ -26,7 +30,7 @@ namespace Banette::Kit
 	/// If the origin is empty and the request URL is relative, the layer
 	/// returns an InvalidUrl error without calling the inner service.
 	///
-	/// Usage example:
+	/// Usage example (static origin):
 	/// @code
 	/// using namespace Banette::Pipeline;
 	/// using namespace Banette::Transport::Http;
@@ -40,11 +44,28 @@ namespace Banette::Kit
 	///
 	/// TSharedRef<FHttpService> ServiceWithOrigin = Builder.Build();
 	/// @endcode
+	///
+	/// Usage example (async origin provider):
+	/// @code
+	/// using namespace Banette::Pipeline;
+	/// using namespace Banette::Transport::Http;
+	/// using namespace Banette::Kit;
+	///
+	/// TSharedRef<FHttpService> Base = MakeShared<FHttpService>();
+	/// FHttpOriginLayer OriginLayer([]() -> UE5Coro::TCoroutine<FString> {
+	///     // Dynamically resolve origin URL (e.g., from config service)
+	///     co_return TEXT("https://dynamic-origin.com");
+	/// });
+	///
+	/// TSharedRef<FHttpService> ServiceWithOrigin = TServiceBuilder<>::New(Base)
+	///     .Layer(OriginLayer)
+	///     .Build();
+	/// @endcode
 	class FHttpOriginLayer : public TLayer<FHttpService, FHttpService>
 	{
 	public:
 		/**
-		 * Construct an origin-prefixing layer.
+		 * Construct an origin-prefixing layer with a static origin.
 		 * @param InOrigin The base URL to prefix (e.g., "https://example.com").
 		 */
 		explicit FHttpOriginLayer(const FString& InOrigin = FString())
@@ -52,15 +73,27 @@ namespace Banette::Kit
 		{
 		}
 
+		/**
+		 * Construct an origin-prefixing layer with an async origin provider.
+		 * The provider coroutine is awaited at call time to dynamically resolve the origin URL.
+		 * @param InOriginProvider Async function (coroutine) that returns the origin URL when awaited.
+		 */
+		explicit FHttpOriginLayer(FLazyOriginProvider InOriginProvider)
+			: Origin()
+			, OriginProvider(MoveTemp(InOriginProvider))
+		{
+		}
+
 		virtual TSharedRef<FHttpService> Wrap(TSharedRef<FHttpService> Inner) const override
 		{
-			return MakeShared<FHttpOriginService>(Inner, Origin);
+			return MakeShared<FHttpOriginService>(Inner, Origin, OriginProvider);
 		}
 
 		virtual ~FHttpOriginLayer() override = default;
 
 	private:
 		FString Origin;
+		FLazyOriginProvider OriginProvider;
 
 		/**
 		 * Internal service wrapper that performs URL prefixing on each request.
@@ -70,9 +103,11 @@ namespace Banette::Kit
 		public:
 			FHttpOriginService(
 				const TSharedRef<FHttpService>& InInner,
-				const FString& InOrigin)
+				const FString& InOrigin,
+				const FLazyOriginProvider& InOriginProvider)
 				: InnerService(InInner)
 				, Origin(InOrigin)
+				, OriginProvider(InOriginProvider)
 			{
 			}
 
@@ -86,8 +121,19 @@ namespace Banette::Kit
 					co_return co_await InnerService->Call(Request);
 				}
 
+				// Resolve the origin: use async provider if set, otherwise use static origin
+				FString ResolvedOrigin;
+				if (OriginProvider.IsBound())
+				{
+					ResolvedOrigin = co_await OriginProvider();
+				}
+				else
+				{
+					ResolvedOrigin = Origin;
+				}
+
 				// URL is relative; we need to prefix with origin
-				if (Origin.IsEmpty())
+				if (ResolvedOrigin.IsEmpty())
 				{
 					// Cannot construct a valid URL without an origin
 					co_return MakeError(UE::UnifiedError::Banette::Transport::Http::InvalidUrl::MakeError());
@@ -95,7 +141,7 @@ namespace Banette::Kit
 
 				// Combine origin and relative URL
 				FHttpRequest ModifiedRequest = Request;
-				ModifiedRequest.Url = CombineUrl(Origin, Request.Url);
+				ModifiedRequest.Url = CombineUrl(ResolvedOrigin, Request.Url);
 
 				co_return co_await InnerService->Call(ModifiedRequest);
 			}
@@ -103,6 +149,7 @@ namespace Banette::Kit
 		private:
 			TSharedRef<FHttpService> InnerService;
 			FString Origin;
+			FLazyOriginProvider OriginProvider;
 
 			/**
 			 * Check if a URL is absolute (starts with http:// or https://).
