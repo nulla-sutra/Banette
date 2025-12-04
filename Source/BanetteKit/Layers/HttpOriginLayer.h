@@ -123,7 +123,7 @@ namespace Banette::Kit
 
 				// Resolve the origin: use async provider if set, otherwise use static origin
 				FString ResolvedOrigin;
-				if (OriginProvider.IsBound())
+				if (OriginProvider.IsSet())
 				{
 					ResolvedOrigin = co_await OriginProvider();
 				}

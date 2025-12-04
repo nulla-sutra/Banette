@@ -62,8 +62,8 @@ public:
 {% for path, path_item in paths -%}
     {%- for method, operation in path_item %}
     /**
-     * Summary: {{ operation.summary | default(value='No summary provided.') }}
-     * Endpoint: {{ method | upper }} {{ path }}
+     * Summary: {{ operation.summary | default(value='No summary provided.') }} @n
+     * Endpoint: {{ method | upper }} {{ path }} @n
      * Function: {{ path | path_to_func_name(method=method) }}
      */
     UFUNCTION(BlueprintCallable, Category = "{{ file_name }}|{{ operation.tags | tags_to_pipe_separated }}", meta=(Latent, LatentInfo = LatentInfo))
