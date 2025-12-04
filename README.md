@@ -163,7 +163,14 @@ TSharedRef<FHttpService> CreateApiService()
     FHttpOriginLayer OriginLayer(TEXT("https://api.example.com"));
     
     FInjectHeaderLayer AuthLayer;
-    AuthLayer.AddHeader(TEXT("Authorization"), TEXT("Bearer YOUR_TOKEN"));
+    AuthLayer.LazyHeader(TEXT("Authorization"), []()-> UE5Coro::TCoroutine<FString>
+       {
+           // Simulate async token retrieval
+           co_await UE5Coro::AsyncDelay(0.1f);
+           FString JsonWebToken = TEXT("your-jwt-token");
+           co_return FString::Format(TEXT("Bearer {0}"), {JsonWebToken});
+       }
+    );
     
     TRetryLayer<FHttpService>::FRetryConfig RetryConfig;
     RetryConfig.MaxAttempts = 3;
