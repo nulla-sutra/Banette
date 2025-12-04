@@ -84,15 +84,13 @@ public:
     {
         {%- set req_body = operation.requestBody | default(value=false) -%}
         {%- set req_params = operation.parameters | default(value=false) %}
-        const auto Req = {{ path | http_request_builder(method=method, parameters=req_params, request_body=req_body) }};
-        const auto Sev = co_await TServiceProvider<F{{ file_name }}Service>::GetService();
-        const auto Res = co_await Sev->Call(Req);
-        if (const auto* Resp = Res.TryGetValue())
+        const auto _Req_ = {{ path | http_request_builder(method=method, parameters=req_params, request_body=req_body) }};
+        const auto _Res_ = co_await TServiceProvider<F{{ file_name }}Service>::GetService()->Call(_Req_);
+        if (const auto* Resp = _Res_.TryGetValue())
         {
-            bSuccess = true;
-            bSuccess &= Resp->bSucceeded;
+            bSuccess = Resp->bSucceeded;
             {%- if operation.responses  %}
-            bSuccess &= Resp->GetContent(ResponseBody);
+            Resp->GetContent(ResponseBody);
             {%- endif %}
         }
         co_return;
