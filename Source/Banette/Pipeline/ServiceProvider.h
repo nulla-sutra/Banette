@@ -9,9 +9,12 @@ namespace Banette::Pipeline
 {
 	using namespace Banette::Core;
 
-	template <CService T>
+	/// TagT is a phantom type to allow multiple specializations per service type T
+	template <CService T, typename TagT = void>
 	struct TServiceProvider
 	{
+		using TagType = TagT;
+
 		virtual ~TServiceProvider() = default;
 
 		static TSharedPtr<T> BuildService()

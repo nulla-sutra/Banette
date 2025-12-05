@@ -246,12 +246,15 @@ TRateLimitLayer<FHttpService> RateLimitLayer(Config);
 ```cpp
 /// You propbably want to put this file in generator's extra-headers parameter
 
-using FAnxHttpApiService = TService<FHttpRequest, FHttpJsonResponse>;
+/// Find FYourService & FYourServiceTag in the generated code
+
+struct FYourServiceTag {};
+using FYourService = TService<FHttpRequest, FHttpJsonResponse>;
 
 template <>
-struct Banette::Pipeline::TServiceProvider<FAnxHttpApiService>
+struct Banette::Pipeline::TServiceProvider<FYourService, FYourServiceTag>
 {
-	BANETTE_SERVICE_PROVIDER(FAnxHttpApiService)
+	BANETTE_SERVICE_PROVIDER(FYourService)
 	{
 		const auto HttpService = MakeShared<FHttpService>();
 

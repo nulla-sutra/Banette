@@ -16,7 +16,6 @@ namespace Banette::Core
 		using ResponseType = ResponseT;
 
 		virtual ~TService() = default;
-
 		virtual UE5Coro::TCoroutine<TResult<ResponseT>> Call(const RequestT& Request) = 0;
 	};
 

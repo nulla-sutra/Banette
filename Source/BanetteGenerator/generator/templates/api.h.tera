@@ -20,7 +20,23 @@
  * Title: {{ info.title }}
  */
  
-{% for name, schema in components.schemas %}
+using namespace Banette::Core;
+using namespace Banette::Pipeline;
+using namespace Banette::Kit;
+using namespace Banette::Transport::Http;
+
+/// @code 
+/// In somewhere like "{{ file_name }}Service.h"
+/// 
+/// struct FAnxHttpApiServiceTag {};
+/// using FAnxHttpApiService = TService<FHttpRequest, FHttpJsonResponse>;
+/// @endcode 
+struct F{{ file_name }}ServiceTag;
+using F{{ file_name }}Service = TService<FHttpRequest, FHttpJsonResponse>;
+
+using F{{ file_name }}ServiceProvider = TServiceProvider<F{{ file_name }}Service, F{{ file_name }}ServiceTag>;
+
+{% for name, schema in components.schemas -%}
 /**
  * USTRUCT: F{{ name }}
  * Description: {{ schema.description | default(value="Auto-generated data structure.") }}
@@ -45,13 +61,6 @@ struct {%- if module_name %} {{ module_name }} {% else %} {% endif -%}F{{ name }
 {% endif %}
 };
 {% endfor %}
-
-using namespace Banette::Core;
-using namespace Banette::Pipeline;
-using namespace Banette::Kit;
-using namespace Banette::Transport::Http;
-
-using FAnxHttpApiService = TService<FHttpRequest, FHttpJsonResponse>;
 
 UCLASS()
 class {%- if module_name %} {{ module_name }} {% else %} {% endif -%}U{{ file_name }}Library : public UBlueprintFunctionLibrary
@@ -85,7 +94,7 @@ public:
         {%- set req_body = operation.requestBody | default(value=false) -%}
         {%- set req_params = operation.parameters | default(value=false) %}
         const auto _Req_ = {{ path | http_request_builder(method=method, parameters=req_params, request_body=req_body) }};
-        const auto _Res_ = co_await TServiceProvider<F{{ file_name }}Service>::GetService()->Call(_Req_);
+        const auto _Res_ = co_await F{{ file_name }}ServiceProvider::GetService()->Call(_Req_);
         if (const auto* Resp = _Res_.TryGetValue())
         {
             bSuccess = Resp->bSucceeded;
