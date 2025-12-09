@@ -140,7 +140,7 @@ namespace Banette::Kit
 				}
 
 				// Combine origin and relative URL
-				FHttpRequest ModifiedRequest = Request;
+				const FHttpRequest ModifiedRequest = Request;
 				ModifiedRequest.Url = CombineUrl(ResolvedOrigin, Request.Url);
 
 				co_return co_await InnerService->Call(ModifiedRequest);
@@ -178,7 +178,7 @@ namespace Banette::Kit
 				}
 				FStringView NormalizedOrigin(BaseOrigin.GetCharArray().GetData(), OriginEnd);
 
-				// Find where leading slashes end in path (trim from left)
+				// Find where leading slashes end in a path (trim from left)
 				int32 PathStart = 0;
 				while (PathStart < RelativePath.Len() && RelativePath[PathStart] == TEXT('/'))
 				{

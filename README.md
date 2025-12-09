@@ -1,6 +1,7 @@
 # Banette
 
 [![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
+![Unreal Plugin](https://img.shields.io/badge/Unreal-Plugin-blue?logo=unrealengine&logoColor=white)
 
 **Banette** is an Unreal Engine plugin that provides a modular, layer-based architecture for building network clients with support for coroutines. Inspired by the "[tower](https://github.com/tower-rs/tower)" service pattern, it enables clean composition of cross-cutting concerns like retries, rate limiting, header injection, and JSON parsing.
 
