@@ -143,8 +143,12 @@ namespace Banette::Kit
 						
 						{
 							FScopeLock Lock(&CacheLock);
-							// Always cache the result (last write wins, which is acceptable for origin URLs)
-							CachedOrigin = ProviderResult;
+							// Cache the result only if it's not empty
+							// (empty origins are not cached to allow retrying on the next request)
+							if (!ProviderResult.IsEmpty())
+							{
+								CachedOrigin = ProviderResult;
+							}
 							ResolvedOrigin = ProviderResult;
 						}
 					}
