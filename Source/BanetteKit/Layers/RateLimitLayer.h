@@ -127,7 +127,7 @@ namespace Banette::Kit
 			// Returns true if token acquired, false if timeout occurred
 			UE5Coro::TCoroutine<bool> WaitForToken()
 			{
-				const double StartTime = FPlatformTime::Seconds();
+				const double StartTime = Config.MaxWaitSeconds > 0.0 ? FPlatformTime::Seconds() : 0.0;
 				
 				while (true)
 				{
@@ -147,17 +147,18 @@ namespace Banette::Kit
 						WaitTime = Missing / Config.TokensPerSecond;
 					}
 
-					// Check if timeout would be exceeded
+					// Check if timeout would be exceeded (only when timeout is configured)
 					if (Config.MaxWaitSeconds > 0.0)
 					{
 						const double ElapsedTime = FPlatformTime::Seconds() - StartTime;
-						if (ElapsedTime >= Config.MaxWaitSeconds)
+						
+						// Limit wait time to not exceed the remaining timeout
+						const double RemainingTime = Config.MaxWaitSeconds - ElapsedTime;
+						if (RemainingTime <= 0.0)
 						{
 							co_return false; // Timeout exceeded
 						}
 						
-						// Limit wait time to not exceed the remaining timeout
-						const double RemainingTime = Config.MaxWaitSeconds - ElapsedTime;
 						if (WaitTime > RemainingTime)
 						{
 							WaitTime = RemainingTime;
