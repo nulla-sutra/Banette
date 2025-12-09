@@ -7,10 +7,9 @@
 #include "BanetteTransport/Http/HttpClient.h"
 #include "UE5Coro.h"
 
-namespace Banette::Kit
+namespace Banette::Transport::Http
 {
 	using namespace Banette::Core;
-	using namespace Banette::Transport::Http;
 
 	/// Type alias for async lazy header providers.
 	/// A function that returns a coroutine yielding the header value.
@@ -24,7 +23,6 @@ namespace Banette::Kit
 	/// Usage example:
 	/// @code
 	/// using namespace Banette::Transport::Http;
-	/// using namespace Banette::Kit;
 	///
 	/// TSharedRef<FHttpService> Base = MakeShared<FHttpService>();
 	/// FInjectHeaderLayer Layer({{TEXT("X-Auth"), TEXT("Token")}}, /* bOverrideExisting = */ true);

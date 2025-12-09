@@ -8,10 +8,9 @@
 #include "BanetteTransport/Http/HttpClient.h"
 #include "UE5Coro.h"
 
-namespace Banette::Kit
+namespace Banette::Transport::Http
 {
 	using namespace Banette::Core;
-	using namespace Banette::Transport::Http;
 
 	/// Container for JSON body data, holding both raw bytes and parsed JSON.
 	///
@@ -79,7 +78,6 @@ namespace Banette::Kit
 	/// @code
 	/// using namespace Banette::Pipeline;
 	/// using namespace Banette::Transport::Http;
-	/// using namespace Banette::Kit;
 	///
 	/// TSharedRef<FHttpService> Base = MakeShared<FHttpService>();
 	/// FJsonLayer JsonLayer;

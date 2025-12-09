@@ -7,10 +7,9 @@
 #include "BanetteTransport/Http/HttpClient.h"
 #include "UE5Coro.h"
 
-namespace Banette::Kit
+namespace Banette::Transport::Http
 {
 	using namespace Banette::Core;
-	using namespace Banette::Transport::Http;
 
 	/// Type alias for async lazy origin providers.
 	/// A function that returns a coroutine yielding the origin URL.
@@ -125,7 +124,7 @@ namespace Banette::Kit
 				FString ResolvedOrigin;
 				if (OriginProvider.IsSet())
 				{
-					// Check cache first (thread-safe read)
+					// Check the cache first (thread-safe read)
 					{
 						FScopeLock Lock(&CacheLock);
 						if (CachedOrigin.IsSet())
@@ -139,9 +138,8 @@ namespace Banette::Kit
 					// but the cache will converge to a consistent value
 					if (ResolvedOrigin.IsEmpty())
 					{
-						FString ProviderResult = co_await OriginProvider();
-						
 						{
+							FString ProviderResult = co_await OriginProvider();
 							FScopeLock Lock(&CacheLock);
 							// Cache the result only if it's not empty
 							// (empty origins are not cached to allow retrying on the next request)
