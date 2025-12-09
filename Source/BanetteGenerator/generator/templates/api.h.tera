@@ -6,7 +6,7 @@
 #include "StructUtils/InstancedStruct.h"
 #include "UE5Coro.h"
 #include "BanetteKit/Layers/JsonLayer.h"
-#include "BanetteTransport/Http/HttpService.h"
+#include "BanetteTransport/Http/HttpClient.h"
 {%- if include_headers -%}
 {%- for header in include_headers %}
 {{ header }}

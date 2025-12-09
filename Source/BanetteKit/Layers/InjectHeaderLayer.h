@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Banette.h"
-#include "BanetteTransport/Http/HttpService.h"
+#include "BanetteTransport/Http/HttpClient.h"
 #include "UE5Coro.h"
 
 namespace Banette::Kit
@@ -30,7 +30,7 @@ namespace Banette::Kit
 	/// FInjectHeaderLayer Layer({{TEXT("X-Auth"), TEXT("Token")}}, /* bOverrideExisting = */ true);
 	/// TSharedRef<FHttpService> WithHeaders = Layer.Wrap(Base);
 	/// @endcode
-	class FInjectHeaderLayer : public TLayer<FHttpService, FHttpService>
+	class FInjectHeaderLayer : public TLayer<FHttpClient, FHttpClient>
 	{
 	public:
 		/**
@@ -82,7 +82,7 @@ namespace Banette::Kit
 			return *this;
 		}
 
-		virtual TSharedRef<FHttpService> Wrap(TSharedRef<FHttpService> Inner) const override
+		virtual TSharedRef<FHttpClient> Wrap(TSharedRef<FHttpClient> Inner) const override
 		{
 			return MakeShared<FInjectHeaderService>(Inner, Headers, LazyHeaders, AsyncLazyHeaders, bOverrideExisting);
 		}
@@ -98,11 +98,11 @@ namespace Banette::Kit
 		/**
 		 * Internal service wrapper that performs header injection on each request.
 		 */
-		class FInjectHeaderService : public FHttpService
+		class FInjectHeaderService : public FHttpClient
 		{
 		public:
 			FInjectHeaderService(
-				const TSharedRef<FHttpService>& InInner,
+				const TSharedRef<FHttpClient>& InInner,
 				const TMap<FString, FString>& InHeaders,
 				const TMap<FString, TFunction<FString()>>& InLazyHeaders,
 				const TMap<FString, FLazyHeaderProvider>& InAsyncLazyHeaders,
@@ -182,7 +182,7 @@ namespace Banette::Kit
 			}
 
 		private:
-			TSharedRef<FHttpService> InnerService;
+			TSharedRef<FHttpClient> InnerService;
 			TMap<FString, FString> Headers;
 			TMap<FString, TFunction<FString()>> LazyHeaders;
 			TMap<FString, FLazyHeaderProvider> AsyncLazyHeaders;

@@ -1,6 +1,6 @@
 // Copyright 2019-Present tarnishablec. All Rights Reserved.
 
-#include "Http/HttpService.h"
+#include "Http/HttpClient.h"
 
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
@@ -52,7 +52,7 @@ namespace Banette::Transport::Http
 	}
 
 	UE5Coro::TCoroutine<TResult<FHttpResponse>>
-	FHttpService::Call(const FHttpRequest& Request)
+	FHttpClient::Call(const FHttpRequest& Request)
 	{
 		// Validate URL
 		if (Request.Url.IsEmpty())

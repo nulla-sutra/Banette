@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Banette.h"
-#include "BanetteTransport/Http/HttpService.h"
+#include "BanetteTransport/Http/HttpClient.h"
 #include "UE5Coro.h"
 
 namespace Banette::Kit
@@ -61,7 +61,7 @@ namespace Banette::Kit
 	///     .Layer(OriginLayer)
 	///     .Build();
 	/// @endcode
-	class FHttpOriginLayer : public TLayer<FHttpService, FHttpService>
+	class FHttpOriginLayer : public TLayer<FHttpClient, FHttpClient>
 	{
 	public:
 		/**
@@ -84,7 +84,7 @@ namespace Banette::Kit
 		{
 		}
 
-		virtual TSharedRef<FHttpService> Wrap(TSharedRef<FHttpService> Inner) const override
+		virtual TSharedRef<FHttpClient> Wrap(TSharedRef<FHttpClient> Inner) const override
 		{
 			return MakeShared<FHttpOriginService>(Inner, Origin, OriginProvider);
 		}
@@ -98,11 +98,11 @@ namespace Banette::Kit
 		/**
 		 * Internal service wrapper that performs URL prefixing on each request.
 		 */
-		class FHttpOriginService : public FHttpService
+		class FHttpOriginService : public FHttpClient
 		{
 		public:
 			FHttpOriginService(
-				const TSharedRef<FHttpService>& InInner,
+				const TSharedRef<FHttpClient>& InInner,
 				const FString& InOrigin,
 				const FLazyOriginProvider& InOriginProvider)
 				: InnerService(InInner)
@@ -173,7 +173,7 @@ namespace Banette::Kit
 			}
 
 		private:
-			TSharedRef<FHttpService> InnerService;
+			TSharedRef<FHttpClient> InnerService;
 			FString Origin;
 			FLazyOriginProvider OriginProvider;
 			

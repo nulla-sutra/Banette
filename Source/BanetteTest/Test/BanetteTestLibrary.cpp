@@ -3,7 +3,7 @@
 
 #include "BanetteTestLibrary.h"
 #include "BanetteKit/Layers/RetryLayer.h"
-#include "BanetteTransport/Http/HttpService.h"
+#include "BanetteTransport/Http/HttpClient.h"
 #include "Dom/JsonObject.h"
 
 using namespace Banette::Transport::Http;
@@ -12,9 +12,9 @@ using namespace Banette::Kit;
 
 FVoidCoroutine UBanetteTestLibrary::Test(FJsonObjectWrapper& Json, FLatentActionInfo LatentInfo)
 {
-	const auto HttpService = MakeShared<FHttpService>();
+	const auto HttpService = MakeShared<FHttpClient>();
 
-	const TRetryLayer<FHttpService> RetryLayer({
+	const TRetryLayer<FHttpClient> RetryLayer({
 		.MaxAttempts = 5,
 		.DelayBetweenRetries = 0.5f,
 	});

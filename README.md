@@ -367,9 +367,9 @@ The `BanetteTest` module contains test utilities. Tests can be run through Unrea
 │         └───────────┴───────────┴───────────────┘           │
 │                           │                                 │
 ├───────────────────────────┼─────────────────────────────────┤
-│                   BanetteTransport                          │
+│                    BanetteTransport                         │
 │              ┌────────────────────────────────┐             │
-│              │       FHttpService             │             │
+│              │       FHttpClient              │             │
 │              │      (HTTP Client)             │             │
 │              └────────────────────────────────┘             │
 │              ┌────────────────────────────────┐             │

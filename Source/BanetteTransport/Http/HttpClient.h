@@ -115,10 +115,10 @@ namespace Banette::Transport::Http
 
 	static FString ToVerb(const EHttpMethod Method);
 
-	class BANETTETRANSPORT_API FHttpService : public TService<FHttpRequest, FHttpResponse>
+	class BANETTETRANSPORT_API FHttpClient : public TService<FHttpRequest, FHttpResponse>
 	{
 	public:
-		virtual ~FHttpService() override = default;
+		virtual ~FHttpClient() override = default;
 
 		// Perform an HTTP call using Unreal's HTTP module.
 		virtual UE5Coro::TCoroutine<TResult<FHttpResponse>> Call(

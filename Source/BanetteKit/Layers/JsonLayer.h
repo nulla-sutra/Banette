@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Banette.h"
 #include "JsonObjectConverter.h"
-#include "BanetteTransport/Http/HttpService.h"
+#include "BanetteTransport/Http/HttpClient.h"
 #include "UE5Coro.h"
 
 namespace Banette::Kit
@@ -91,12 +91,12 @@ namespace Banette::Kit
 	///
 	/// // Now responses will have Body as FJsonBody with both raw bytes and parsed JSON
 	/// @endcode
-	class FJsonLayer : public TLayer<FHttpService, FHttpJsonService>
+	class FJsonLayer : public TLayer<FHttpClient, FHttpJsonService>
 	{
 	public:
 		FJsonLayer() = default;
 
-		virtual TSharedRef<FHttpJsonService> Wrap(TSharedRef<FHttpService> Inner) const override
+		virtual TSharedRef<FHttpJsonService> Wrap(TSharedRef<FHttpClient> Inner) const override
 		{
 			return MakeShared<FJsonService>(Inner);
 		}
@@ -109,7 +109,7 @@ namespace Banette::Kit
 		class FJsonService : public FHttpJsonService
 		{
 		public:
-			explicit FJsonService(const TSharedRef<FHttpService>& InInner)
+			explicit FJsonService(const TSharedRef<FHttpClient>& InInner)
 				: InnerService(InInner)
 			{
 			}
@@ -146,7 +146,7 @@ namespace Banette::Kit
 			}
 
 		private:
-			TSharedRef<FHttpService> InnerService;
+			TSharedRef<FHttpClient> InnerService;
 
 			/// Attempts to parse JSON from raw bytes.
 			/// Returns nullptr if parsing fails.
