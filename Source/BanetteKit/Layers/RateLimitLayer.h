@@ -3,6 +3,13 @@
 #include "CoreMinimal.h"
 #include "Banette.h"
 #include "UE5Coro.h"
+#include "Experimental/UnifiedError/UnifiedError.h"
+
+// UnifiedError declaration for rate limit timeout
+UE_DECLARE_ERROR_MODULE(BANETTEKIT_API, Banette::Kit);
+
+UE_DECLARE_ERROR(BANETTEKIT_API, RateLimitTimeout, 1, Banette::Kit,
+                 NSLOCTEXT("BanetteKit", "RateLimitTimeout", "Rate limit wait timeout exceeded."));
 
 namespace Banette::Kit
 {
@@ -16,6 +23,8 @@ namespace Banette::Kit
 		double MaxTokens = 10.0;
 		// If no token is available, wait asynchronously? (false returns an error immediately)
 		bool bWaitForToken = true;
+		// Maximum time (in seconds) to wait for a token. 0 means wait indefinitely.
+		double MaxWaitSeconds = 0.0;
 	};
 
 	/**
@@ -67,8 +76,13 @@ namespace Banette::Kit
 				// Try to acquire a token
 				if (Config.bWaitForToken)
 				{
-					// If waiting is required, loop until a token is acquired
-					co_await WaitForToken();
+					// If waiting is required, loop until a token is acquired or timeout occurs
+					const bool bSuccess = co_await WaitForToken();
+					if (!bSuccess)
+					{
+						// Timeout occurred
+						co_return TResult<typename ServiceT::ResponseType>(MakeError(RateLimitTimeout()));
+					}
 				}
 				else
 				{
@@ -110,8 +124,11 @@ namespace Banette::Kit
 			}
 
 			// Asynchronously wait for a token
-			UE5Coro::TCoroutine<> WaitForToken()
+			// Returns true if token acquired, false if timeout occurred
+			UE5Coro::TCoroutine<bool> WaitForToken()
 			{
+				const double StartTime = Config.MaxWaitSeconds > 0.0 ? FPlatformTime::Seconds() : 0.0;
+				
 				while (true)
 				{
 					double WaitTime;
@@ -122,12 +139,30 @@ namespace Banette::Kit
 						if (CurrentTokens >= 1.0)
 						{
 							CurrentTokens -= 1.0;
-							co_return; // Acquired successfully; exit
+							co_return true; // Acquired successfully; exit
 						}
 
 						// Compute the required wait time
 						const double Missing = 1.0 - CurrentTokens;
 						WaitTime = Missing / Config.TokensPerSecond;
+					}
+
+					// Check if timeout would be exceeded (only when timeout is configured)
+					if (Config.MaxWaitSeconds > 0.0)
+					{
+						const double ElapsedTime = FPlatformTime::Seconds() - StartTime;
+						
+						// Limit wait time to not exceed the remaining timeout
+						const double RemainingTime = Config.MaxWaitSeconds - ElapsedTime;
+						if (RemainingTime <= 0.0)
+						{
+							co_return false; // Timeout exceeded
+						}
+						
+						if (WaitTime > RemainingTime)
+						{
+							WaitTime = RemainingTime;
+						}
 					}
 
 					if (WaitTime > 0.0)
