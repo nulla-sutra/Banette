@@ -1,12 +1,11 @@
 /*
  * Copyright 2019-Present tarnishablec. All Rights Reserved.
  */
-pub mod filter;
 pub mod loader;
 pub mod parser;
 
+use crate::filter::register_all_filters;
 use anyhow::anyhow;
-use filter::register_all_filters;
 use loader::load_openapi_spec;
 use parser::parse_include_headers;
 use std::ffi::{c_char, CStr};

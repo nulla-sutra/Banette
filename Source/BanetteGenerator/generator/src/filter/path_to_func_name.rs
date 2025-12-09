@@ -119,7 +119,7 @@ fn convert_to_pascal_case(input: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::openapi::filter::tests::create_method_args;
+    use crate::filter::tests::create_method_args;
     use serde_json::json;
 
     #[test]

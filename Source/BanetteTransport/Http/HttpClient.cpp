@@ -95,10 +95,7 @@ namespace Banette::Transport::Http
 		// Process asynchronously via UE5Coro's awaiter
 		auto [Response, bConnected] = co_await UE5Coro::Http::ProcessAsync(HttpReq);
 
-		if (!bConnected)
-			co_return MakeError(ConnectionFailed::MakeError());
-
-		if (!Response.IsValid())
+		if (!bConnected || !Response.IsValid())
 			co_return MakeError(ConnectionFailed::MakeError());
 
 		FHttpResponse Out;

@@ -210,7 +210,7 @@ fn extract_content_type(request_body: &Value) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::openapi::filter::tests::create_method_args;
+    use crate::filter::tests::create_method_args;
     use serde_json::json;
 
     /// Helper function to create args with method, parameters, and request_body
