@@ -135,16 +135,18 @@ namespace Banette::Kit
 					}
 					
 					// If not cached, call provider and cache the result
+					// Note: Multiple concurrent requests might call the provider during initialization,
+					// but the cache will converge to a consistent value
 					if (ResolvedOrigin.IsEmpty())
 					{
 						FString ProviderResult = co_await OriginProvider();
 						
-						FScopeLock Lock(&CacheLock);
-						if (!CachedOrigin.IsSet())  // Double-check to avoid race condition
 						{
+							FScopeLock Lock(&CacheLock);
+							// Always cache the result (last write wins, which is acceptable for origin URLs)
 							CachedOrigin = ProviderResult;
+							ResolvedOrigin = ProviderResult;
 						}
-						ResolvedOrigin = CachedOrigin.GetValue();
 					}
 				}
 				else
@@ -172,7 +174,7 @@ namespace Banette::Kit
 			FLazyOriginProvider OriginProvider;
 			
 			// Cache for OriginProvider result
-			mutable FCriticalSection CacheLock;
+			FCriticalSection CacheLock;
 			TOptional<FString> CachedOrigin;
 
 			/**
