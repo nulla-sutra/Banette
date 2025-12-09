@@ -121,11 +121,31 @@ namespace Banette::Kit
 					co_return co_await InnerService->Call(Request);
 				}
 
-				// Resolve the origin: use async provider if set, otherwise use static origin
+				// Resolve the origin: use cached value, async provider, or static origin
 				FString ResolvedOrigin;
 				if (OriginProvider.IsSet())
 				{
-					ResolvedOrigin = co_await OriginProvider();
+					// Check cache first (thread-safe read)
+					{
+						FScopeLock Lock(&CacheLock);
+						if (CachedOrigin.IsSet())
+						{
+							ResolvedOrigin = CachedOrigin.GetValue();
+						}
+					}
+					
+					// If not cached, call provider and cache the result
+					if (ResolvedOrigin.IsEmpty())
+					{
+						FString ProviderResult = co_await OriginProvider();
+						
+						FScopeLock Lock(&CacheLock);
+						if (!CachedOrigin.IsSet())  // Double-check to avoid race condition
+						{
+							CachedOrigin = ProviderResult;
+						}
+						ResolvedOrigin = CachedOrigin.GetValue();
+					}
 				}
 				else
 				{
@@ -150,6 +170,10 @@ namespace Banette::Kit
 			TSharedRef<FHttpService> InnerService;
 			FString Origin;
 			FLazyOriginProvider OriginProvider;
+			
+			// Cache for OriginProvider result
+			mutable FCriticalSection CacheLock;
+			TOptional<FString> CachedOrigin;
 
 			/**
 			 * Check if a URL is absolute (starts with http:// or https://).
