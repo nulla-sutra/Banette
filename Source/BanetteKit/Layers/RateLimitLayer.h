@@ -14,6 +14,7 @@ UE_DECLARE_ERROR(BANETTEKIT_API, RateLimitTimeout, 1, Banette::Kit,
 namespace Banette::Kit
 {
 	using namespace Banette::Core;
+	using namespace UE::UnifiedError::Banette::Kit;
 
 	struct FRateLimitConfig
 	{
@@ -24,7 +25,7 @@ namespace Banette::Kit
 		// If no token is available, wait asynchronously? (false returns an error immediately)
 		bool bWaitForToken = true;
 		// Maximum time (in seconds) to wait for a token. 0 means wait indefinitely.
-		double MaxWaitSeconds = 0.0;
+		double MaxWaitSeconds = 5.0;
 	};
 
 	/**
@@ -81,7 +82,7 @@ namespace Banette::Kit
 					if (!bSuccess)
 					{
 						// Timeout occurred
-						co_return TResult<typename ServiceT::ResponseType>(MakeError(RateLimitTimeout()));
+						co_return MakeError(RateLimitTimeout::MakeError());
 					}
 				}
 				else
@@ -128,7 +129,7 @@ namespace Banette::Kit
 			UE5Coro::TCoroutine<bool> WaitForToken()
 			{
 				const double StartTime = Config.MaxWaitSeconds > 0.0 ? FPlatformTime::Seconds() : 0.0;
-				
+
 				while (true)
 				{
 					double WaitTime;
@@ -151,14 +152,14 @@ namespace Banette::Kit
 					if (Config.MaxWaitSeconds > 0.0)
 					{
 						const double ElapsedTime = FPlatformTime::Seconds() - StartTime;
-						
+
 						// Limit wait time to not exceed the remaining timeout
 						const double RemainingTime = Config.MaxWaitSeconds - ElapsedTime;
 						if (RemainingTime <= 0.0)
 						{
 							co_return false; // Timeout exceeded
 						}
-						
+
 						if (WaitTime > RemainingTime)
 						{
 							WaitTime = RemainingTime;
