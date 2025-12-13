@@ -11,6 +11,7 @@ UE_DECLARE_ERROR_MODULE(BANETTEKIT_API, Banette::Kit);
 UE_DECLARE_ERROR(BANETTEKIT_API, RateLimitTimeout, 1, Banette::Kit,
                  NSLOCTEXT("BanetteKit", "RateLimitTimeout", "Rate limit wait timeout exceeded."));
 
+
 namespace Banette::Kit
 {
 	using namespace Banette::Core;
