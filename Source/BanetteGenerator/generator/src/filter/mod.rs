@@ -13,26 +13,26 @@ pub mod to_ue_type;
 use tera::Tera;
 
 pub fn register_all_filters(tera: &mut Tera) {
-    tera.register_filter("to_ue_type", to_ue_type::to_ue_type_filter);
-    tera.register_filter("is_required", is_required::is_required_filter);
+    tera.register_filter("f_to_ue_type", to_ue_type::to_ue_type_filter);
+    tera.register_filter("f_is_required", is_required::is_required_filter);
     tera.register_filter(
-        "tags_to_pipe_separated",
+        "f_tags_to_pipe_separated",
         tags_to_pipe_separated::tags_to_pipe_separated_filter,
     );
     tera.register_filter(
-        "request_body_schema",
+        "f_request_body_schema",
         request_body_schema::request_body_schema_filter,
     );
     tera.register_filter(
-        "response_body_schema",
+        "f_response_body_schema",
         response_body_schema::response_body_schema_filter,
     );
     tera.register_filter(
-        "path_to_func_name",
+        "f_path_to_func_name",
         path_to_func_name::path_to_func_name_filter,
     );
     tera.register_filter(
-        "http_request_builder",
+        "f_http_request_builder",
         http_request_builder::http_request_builder_filter,
     );
 }

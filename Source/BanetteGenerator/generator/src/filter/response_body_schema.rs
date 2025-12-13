@@ -15,10 +15,10 @@ const SUCCESS_STATUS_CODES: &[&str] = &["200", "201", "202", "203", "204"];
 /// following order:
 /// 1. Looks for successful response status codes (200, 201, 202, 203, 204)
 /// 2. Falls back to the first available response
-/// 3. From the selected response, extracts schema preferring "application/json"
+/// 3. From the selected response, extracts schema preferring `application/json`
 /// 4. If not found, use the first available media type
 ///
-/// Usage in the template: {{ operation.responses | response_body_schema | to_ue_type }}
+/// Usage in the template: `{{ operation.responses | response_body_schema | to_ue_type }}`
 pub fn response_body_schema_filter(value: &Value, _args: &HashMap<String, Value>) -> Result<Value> {
     // 1. Check that the input is an object (response object)
     let responses = value.as_object().ok_or_else(|| {
@@ -29,13 +29,20 @@ pub fn response_body_schema_filter(value: &Value, _args: &HashMap<String, Value>
     let response = SUCCESS_STATUS_CODES
         .iter()
         .find_map(|code| responses.get(*code))
-        .or_else(|| responses.values().next())
-        .ok_or_else(|| tera::Error::msg("Responses object is empty."))?;
+        .or_else(|| responses.values().next());
 
-    // 4. Get the "content" field from the selected response
+    let response = match response {
+        Some(resp) => resp,
+        None => return Ok(Value::Null),
+    };
+
     let content = response
         .get("content")
-        .ok_or_else(|| tera::Error::msg("Response object is missing 'content' field."))?;
+        .unwrap_or_else(|| return &Value::Null);
+
+    if content.is_null() {
+        return Ok(Value::Null);
+    }
 
     // 5. Try to find the schema for "application/json"
     if let Some(schema_obj) = content
