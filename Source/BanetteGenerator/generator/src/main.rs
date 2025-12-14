@@ -7,7 +7,7 @@ use clap::{Parser, ValueEnum};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 enum Mode {
     Openapi,
-    UStruct,
+    GraphQL,
 }
 #[derive(Parser)]
 struct Args {
@@ -36,7 +36,7 @@ fn main() -> anyhow::Result<()> {
             args.module_name.as_str(),
             generator::openapi::parser::parse_include_headers(&args.extra_headers),
         ),
-        Mode::UStruct => {
+        Mode::GraphQL => {
             unimplemented!();
         }
     }

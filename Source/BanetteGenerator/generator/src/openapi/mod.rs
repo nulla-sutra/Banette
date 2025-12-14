@@ -152,15 +152,15 @@ pub fn generate_safe(
 
     #[cfg(debug_assertions)]
     {
-        let template_path = concat!(env!("CARGO_MANIFEST_DIR"), "/templates/api.h.tera");
-        tera.add_template_file(template_path, Some("open_api_template"))?;
+        let template_path = concat!(env!("CARGO_MANIFEST_DIR"), "/templates/openapi.h.tera");
+        tera.add_template_file(template_path, Some("openapi_template"))?;
     }
 
     #[cfg(not(debug_assertions))]
     {
         tera.add_raw_template(
-            "open_api_template",
-            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/api.h.tera")),
+            "openapi_template",
+            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/openapi.h.tera")),
         )?;
     }
 
@@ -169,7 +169,7 @@ pub fn generate_safe(
     context.insert("file_name", &file_name_base);
     context.insert("include_headers", &include_headers);
 
-    let rendered = tera.render("open_api_template", &context)?;
+    let rendered = tera.render("openapi_template", &context)?;
 
     let mut file = File::create(&file_path)?;
 
